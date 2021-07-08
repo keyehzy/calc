@@ -8,7 +8,17 @@ add_executable(
 target_link_libraries(calc PRIVATE calc-lib readline)
 
 add_library(
-  calc-lib
+  calc-lib 
+  calc/assert.h
+  calc/ast.h
+  calc/codeloc.h
+  calc/eval.h
+  calc/stream.h
+  calc/token.h
+  ast.c
+  codeloc.c
+  eval.c
+  stream.c
   token.c
 )
 

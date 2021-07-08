@@ -7,3 +7,5 @@
 typedef struct {
     const char* buffer;
 } stream;
+
+stream new_stream(const char* buffer);

@@ -1,11 +1,47 @@
 #include <gtest/gtest.h>
 
+extern "C" {
 #include <calc/stream.h>
 #include <calc/token.h>
+}
 
 TEST(test_token, token_simple) {
-    stream s = {.buffer="42"};
-    token t = parse_number(&s);
-    EXPECT_EQ(t.type, tk_number);
+    {
+        lexer lex = new_lexer("42");
+        token t = lex.last_token_;
+        EXPECT_EQ(t.type, tk_number);
+        EXPECT_STREQ(normalized_name(t.loc), "42");
+    }
+    {
+        lexer lex = new_lexer("4.20");
+        token t = lex.last_token_;
+        EXPECT_EQ(t.type, tk_number);
+        EXPECT_STREQ(normalized_name(t.loc), "4.20");
+    }
+    {
+        lexer lex = new_lexer("+");
+        token t = lex.last_token_;
+        EXPECT_EQ(t.type, tk_operator);
+        EXPECT_STREQ(normalized_name(t.loc), "+");
+    }
+    {
+        lexer lex = new_lexer("-");
+        token t = lex.last_token_;
+        EXPECT_EQ(t.type, tk_operator);
+        EXPECT_STREQ(normalized_name(t.loc), "-");
+    }
+    {
+        lexer lex = new_lexer("*");
+        token t = lex.last_token_;
+        EXPECT_EQ(t.type, tk_operator);
+        EXPECT_STREQ(normalized_name(t.loc), "*");
+    }
+
+    {
+        lexer lex = new_lexer("/");
+        token t = lex.last_token_;
+        EXPECT_EQ(t.type, tk_operator);
+        EXPECT_STREQ(normalized_name(t.loc), "/");
+    }
 }
 

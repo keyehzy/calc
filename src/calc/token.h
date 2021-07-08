@@ -1,6 +1,10 @@
 #pragma once
+
 #include <calc/stream.h>
 #include <calc/codeloc.h>
+
+#define L_SKIP() skip(lex)
+#define L_PEEK() peek(lex)
 
 #define ENUMERATE_NUMBERS(O) \
     O('0')  \
@@ -90,7 +94,7 @@
 typedef enum {
     tk_eof,
     tk_number,
-    tk_operator
+    tk_operator,
 } token_type;
 
 typedef struct {
@@ -98,4 +102,11 @@ typedef struct {
     codeloc loc;
 } token;
 
-token parse_number(stream *s);
+typedef struct lexer {
+    stream s;
+    token last_token_;
+} lexer;
+
+token peek(struct lexer*);
+void skip(struct lexer*);
+lexer new_lexer(const char*);

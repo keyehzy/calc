@@ -3,14 +3,16 @@ cmake_minimum_required(VERSION 3.18)
 add_executable(
   calc-test
   test-token.cpp
+  test-ast.cpp
+  test-eval.cpp
 )
+
 target_include_directories(calc-test PRIVATE .)
+
 target_link_libraries(
   calc-test
   PRIVATE
-  gmock
-  gmock_main
-  gtest
+  gtest_main
   calc-lib
 )
 
