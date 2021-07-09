@@ -3,11 +3,14 @@
 #include <calc/eval.h>
 #include <stdlib.h>
 
+#define RECURSIVE_MAX_DEPTH 6
+
 static double sum(double a, double b);
 static double sub(double a, double b);
 static double mul(double a, double b);
 static double divide(double a, double b);
 static double negate(double a);
+static double fn_cos(double a);
 
 double evaluate(const char *input) {
     lexer  lex   = new_lexer(input);
@@ -34,6 +37,10 @@ double evaluate_ast(AST *ast) {
 
         case op_unary_minus:
             return negate(evaluate_ast(ast->right));
+
+        case op_cos: {
+            return fn_cos(evaluate_ast(ast->right));
+        }
 
         default:
             CHECK_NOT_REACHED();
@@ -72,3 +79,13 @@ static double mul(double a, double b) { return a * b; }
 static double divide(double a, double b) { return a / b; }
 
 static double negate(double a) { return -a; }
+
+static double fn_cos_helper(int n, double a) {
+    if (n > RECURSIVE_MAX_DEPTH) {
+        return 1.0;
+    }
+    return 1.0 -
+           a * a / ((2.0 * n - 1.0) * (2.0 * n)) * fn_cos_helper(n + 1, a);
+}
+
+static double fn_cos(double a) { return fn_cos_helper(1, a); }
