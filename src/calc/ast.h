@@ -1,7 +1,7 @@
 #pragma once
 
-#include <calc/stream.h>
 #include <calc/codeloc.h>
+#include <calc/stream.h>
 #include <calc/token.h>
 
 typedef enum {
@@ -19,6 +19,8 @@ typedef enum {
     op_binary_div,
     op_unary_plus,
     op_unary_minus,
+    op_sin,
+    op_cos,
 } op_kind;
 
 typedef enum {
@@ -35,19 +37,19 @@ typedef enum {
 } associativity;
 
 typedef struct {
-    op_kind kind;
-    precedence prec;
+    op_kind       kind;
+    precedence    prec;
     associativity assoc;
 } operation;
 
 typedef struct ast {
-    ast_kind kind;
-    codeloc loc;
-    operation op;
-    struct ast* left;
-    struct ast* right;
+    ast_kind    kind;
+    codeloc     loc;
+    operation   op;
+    struct ast *left;
+    struct ast *right;
 } AST;
 
-AST *parse_expr(lexer*, operation);
-AST *parse_expr1(lexer*);
-void free_ast(AST* );
+AST *parse_expr(lexer *, operation);
+AST *parse_expr1(lexer *);
+void free_ast(AST *);

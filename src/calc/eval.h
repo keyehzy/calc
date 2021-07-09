@@ -2,5 +2,5 @@
 
 #include <calc/ast.h>
 
-double evaluate_ast(AST*);
-double evaluate(const char*);
+double evaluate_ast(AST *);
+double evaluate(const char *);

@@ -1,15 +1,14 @@
+#include <calc/codeloc.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <calc/codeloc.h>
-
 codeloc new_loc(const char *begin, const char *end) {
-    return (codeloc) {.begin=begin, .end=end};
+    return (codeloc){.begin = begin, .end = end};
 }
 
-char *normalized_name(codeloc loc) {
+char *normalized_name(char *name, codeloc loc) {
     size_t len = (loc.end - loc.begin);
-    char *name = (char *) malloc(len + 1);
+    name       = (char *)realloc(name, len + 1);
     strncpy(name, loc.begin, len);
     name[len] = '\0';
     return name;

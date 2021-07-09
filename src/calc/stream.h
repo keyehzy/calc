@@ -5,7 +5,7 @@
 #define S_IS_EOF(s) (PEEK(s) == '\0')
 
 typedef struct {
-    const char* buffer;
+    const char *buffer;
 } stream;
 
-stream new_stream(const char* buffer);
+stream new_stream(const char *buffer);
