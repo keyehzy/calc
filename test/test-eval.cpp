@@ -49,4 +49,9 @@ TEST(test_eval, eval_simple) {
         double value = evaluate("cos(2.0)");
         ASSERT_NEAR(value, -0.416147, 1e-6);
     }
+
+    {
+        double value = evaluate("sin(2.0)");
+        ASSERT_NEAR(value, 0.909297, 1e-6);
+    }
 }
