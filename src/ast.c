@@ -74,6 +74,10 @@ static operation operation_from_tk(token t, int context) {
                              .prec  = prec_multdiv,
                              .assoc = assoc_right};
             break;
+        case '^':
+            op = (operation){
+                .kind = op_binary_pow, .prec = prec_pow, .assoc = assoc_left};
+            break;
         default:
             CHECK_NOT_REACHED();
         }
@@ -99,6 +103,7 @@ static operation operation_from_tk(token t, int context) {
 
 static AST *parse_primary_expr(lexer *lex) {
     switch (L_PEEK().type) {
+
     case tk_number: {
         codeloc number_span = L_PEEK().loc;
         L_SKIP();
@@ -114,7 +119,11 @@ static AST *parse_primary_expr(lexer *lex) {
         AST *paren_expr = parse_expr1(lex);
         CHECK(L_PEEK().type == tk_right_paren);
         L_SKIP();
-        return paren_expr;
+        return new_ast(ast_paren_expr, paren_expr->loc,
+                       (operation){.kind  = op_none,
+                                   .prec  = prec_paren,
+                                   .assoc = assoc_none},
+                       NULL, paren_expr);
     }
 
     case tk_operator: {
@@ -124,6 +133,19 @@ static AST *parse_primary_expr(lexer *lex) {
         return new_ast(ast_unary_op, operator_span, op, NULL,
                        parse_primary_expr(lex));
     }
+
+#define PARSE_CONST(constant)                                                  \
+    case tk_##constant: {                                                      \
+        codeloc const_span = L_PEEK().loc;                                     \
+        L_SKIP();                                                              \
+        return new_ast(ast_const_##constant, const_span,                       \
+                       (operation){.kind  = op_none,                           \
+                                   .prec  = prec_none,                         \
+                                   .assoc = assoc_none},                       \
+                       NULL, NULL);                                            \
+    }
+        ENUMERATE_CONSTANTS(PARSE_CONST);
+#undef PARSE_CONST
 
 #define PARSE_FUNC(fn)                                                         \
     case tk_##fn: {                                                            \
@@ -137,7 +159,6 @@ static AST *parse_primary_expr(lexer *lex) {
     }
 
         ENUMERATE_FUNCTIONS(PARSE_FUNC);
-
 #undef PARSE_FUNC
 
     default:

@@ -47,6 +47,13 @@ TEST(test_token, token_simple) {
     }
 
     {
+        lexer lex = new_lexer("^");
+        token t   = lex.last_token_;
+        EXPECT_EQ(t.type, tk_operator);
+        EXPECT_STREQ(normalized_name(name, t.loc), "^");
+    }
+
+    {
         lexer lex = new_lexer("(");
         token t   = lex.last_token_;
         EXPECT_EQ(t.type, tk_left_paren);
@@ -67,19 +74,16 @@ TEST(test_token, token_simple) {
         EXPECT_STREQ(normalized_name(name, t.loc), "sin");
     }
 
-    {
-        lexer lex = new_lexer("cos");
-        token t   = lex.last_token_;
-        EXPECT_EQ(t.type, tk_cos);
-        EXPECT_STREQ(normalized_name(name, t.loc), "cos");
+#define TEST_TOKEN_FUNCS(func)                                                 \
+    {                                                                          \
+        lexer lex = new_lexer(#func);                                          \
+        token t   = lex.last_token_;                                           \
+        EXPECT_EQ(t.type, tk_##func);                                          \
+        EXPECT_STREQ(normalized_name(name, t.loc), #func);                     \
     }
-
-    {
-        lexer lex = new_lexer("sqrt");
-        token t   = lex.last_token_;
-        EXPECT_EQ(t.type, tk_sqrt);
-        EXPECT_STREQ(normalized_name(name, t.loc), "sqrt");
-    }
+    ENUMERATE_FUNCTIONS(TEST_TOKEN_FUNCS)
+    ENUMERATE_CONSTANTS(TEST_TOKEN_FUNCS)
+#undef TEST_TOKEN_FUNCS
 
     free(name);
 }

@@ -61,4 +61,24 @@ TEST(test_eval, eval_simple) {
         double value = evaluate("sqrt(2.0)");
         ASSERT_NEAR(value, 1.41421356237309, eps);
     }
+
+    {
+        double value = evaluate("exp(2.0)");
+        ASSERT_NEAR(value, 7.38905609893065, eps);
+    }
+
+    {
+        double value = evaluate("log(2.0)");
+        ASSERT_NEAR(value, 0.693147180559945, eps);
+    }
+
+    {
+        double value = evaluate("2^3^2");
+        ASSERT_NEAR(value, 512.0, eps);
+    }
+
+    {
+        double value = evaluate("pi");
+        ASSERT_NEAR(value, 3.14159265358979, eps);
+    }
 }

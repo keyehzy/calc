@@ -12,6 +12,8 @@ static token next_token(stream *);
 
 static void skip_whitespace(stream *);
 
+static token parse_singlechar_token(stream *, token_type);
+
 token peek(lexer *self) { return self->last_token_; }
 
 void skip(lexer *self) { self->last_token_ = next_token(&self->s); }
@@ -76,6 +78,7 @@ finish:
         return (token){.type = tk_##func, .loc = loc};                         \
     }
     ENUMERATE_FUNCTIONS(COMPARE)
+    ENUMERATE_CONSTANTS(COMPARE)
 #undef COMPARE
 
     CHECK_NOT_REACHED();
@@ -90,35 +93,30 @@ static void skip_whitespace(stream *s) {
     s->buffer = input;
 }
 
+static token parse_singlechar_token(stream *s, token_type type) {
+    const char *pos = S_PEEK(s);
+    codeloc     loc = (codeloc){.begin = pos, .end = pos + 1};
+    S_SKIP(s);
+    return (token){.type = type, .loc = loc};
+}
+
 static token next_token(stream *s) {
     skip_whitespace(s);
     switch (S_PEEK(s)[0]) {
         CASE_NUMBERS
         return parse_number(s);
 
-        CASE_OPERATORS { /* TODO handle multiple character operators */
-            const char *pos = S_PEEK(s);
-            codeloc     loc = (codeloc){.begin = pos, .end = pos + 1};
-            S_SKIP(s);
-            return (token){.type = tk_operator, .loc = loc};
-        }
-
         CASE_CHARACTERS
         return parse_identifier(s);
 
-    case '(': {
-        const char *pos = S_PEEK(s);
-        codeloc     loc = (codeloc){.begin = pos, .end = pos + 1};
-        S_SKIP(s);
-        return (token){.type = tk_left_paren, .loc = loc};
-    }
+        CASE_OPERATORS /* TODO handle multiple character operators */
+            return parse_singlechar_token(s, tk_operator);
 
-    case ')': {
-        const char *pos = S_PEEK(s);
-        codeloc     loc = (codeloc){.begin = pos, .end = pos + 1};
-        S_SKIP(s);
-        return (token){.type = tk_right_paren, .loc = loc};
-    }
+    case '(':
+        return parse_singlechar_token(s, tk_left_paren);
+
+    case ')':
+        return parse_singlechar_token(s, tk_right_paren);
 
     case '\0':
         return (token){.type = tk_eof};

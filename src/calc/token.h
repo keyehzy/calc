@@ -76,12 +76,17 @@
     O('+')                                                                     \
     O('-')                                                                     \
     O('*')                                                                     \
-    O('/')
+    O('/')                                                                     \
+    O('^')
 
 #define ENUMERATE_FUNCTIONS(O)                                                 \
     O(sqrt)                                                                    \
     O(sin)                                                                     \
-    O(cos)
+    O(cos)                                                                     \
+    O(exp)                                                                     \
+    O(log)
+
+#define ENUMERATE_CONSTANTS(O) O(pi)
 
 #define CASE(num) case num:
 
@@ -99,9 +104,11 @@ typedef enum {
     tk_operator,
     tk_left_paren,
     tk_right_paren,
-    tk_sqrt,
-    tk_sin,
-    tk_cos,
+
+#define TOKEN_TYPE_ENUM(func) tk_##func,
+    ENUMERATE_FUNCTIONS(TOKEN_TYPE_ENUM) ENUMERATE_CONSTANTS(TOKEN_TYPE_ENUM)
+#undef TOKEN_TYPE_FUNCS
+
 } token_type;
 
 typedef struct {

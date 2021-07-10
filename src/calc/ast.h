@@ -9,6 +9,11 @@ typedef enum {
     ast_binary_op,
     ast_unary_op,
     ast_number_literal,
+    ast_paren_expr,
+
+#define AST_CONST(constant) ast_const_##constant,
+    ENUMERATE_CONSTANTS(AST_CONST)
+#undef AST_CONST
 } ast_kind;
 
 typedef enum {
@@ -17,6 +22,7 @@ typedef enum {
     op_binary_minus,
     op_binary_times,
     op_binary_div,
+    op_binary_pow,
     op_unary_plus,
     op_unary_minus,
 
@@ -30,7 +36,9 @@ typedef enum {
     prec_none,
     prec_addsub,
     prec_multdiv,
+    prec_pow,
     prec_unary,
+    prec_paren,
 } precedence;
 
 typedef enum {
