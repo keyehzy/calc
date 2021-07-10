@@ -82,5 +82,13 @@ TEST(test_ast, ast_simple) {
         EXPECT_EQ(ast->right->kind, ast_number_literal);
     }
 
+    {
+        lexer lex = new_lexer("sqrt(2)");
+        AST * ast = parse_expr1(&lex);
+        EXPECT_EQ(ast->kind, ast_unary_op);
+        EXPECT_EQ(ast->op.kind, op_sqrt);
+        EXPECT_EQ(ast->right->kind, ast_number_literal);
+    }
+
     free(name);
 }

@@ -6,7 +6,7 @@
 int repl() {
     char *buffer;
     while ((buffer = readline("> "))) {
-        printf("%lf\n", evaluate(buffer));
+        printf("%.9lf\n", evaluate(buffer));
         free(buffer);
     }
     return 0;

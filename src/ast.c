@@ -136,8 +136,7 @@ static AST *parse_primary_expr(lexer *lex) {
                        parse_primary_expr(lex));                               \
     }
 
-        PARSE_FUNC(sin);
-        PARSE_FUNC(cos);
+        ENUMERATE_FUNCTIONS(PARSE_FUNC);
 
 #undef PARSE_FUNC
 

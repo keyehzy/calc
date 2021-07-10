@@ -1,17 +1,26 @@
 #include <calc/assert.h>
 #include <calc/ast.h>
 #include <calc/eval.h>
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
-#define RECURSIVE_MAX_DEPTH 6
+#define RECURSIVE_MAX_DEPTH 15
+#define EPS 1e-6
 
-static double sum(double a, double b);
-static double sub(double a, double b);
-static double mul(double a, double b);
-static double divide(double a, double b);
-static double negate(double a);
-static double fn_cos(double a);
-static double fn_sin(double a);
+static double sum(double, double);
+static double sub(double, double);
+static double mul(double, double);
+static double divide(double, double);
+static double negate(double);
+
+#define EVAL_FUNCS(func) static double fn_##func(double);
+ENUMERATE_FUNCTIONS(EVAL_FUNCS)
+#undef EVAL_FUNCS
+
+static double fn_sin_helper(int, double);
+static double fn_cos_helper(int, double);
 
 double evaluate(const char *input) {
     lexer  lex   = new_lexer(input);
@@ -39,11 +48,11 @@ double evaluate_ast(AST *ast) {
         case op_unary_minus:
             return negate(evaluate_ast(ast->right));
 
-        case op_cos:
-            return fn_cos(evaluate_ast(ast->right));
-
-        case op_sin:
-            return fn_sin(evaluate_ast(ast->right));
+#define CASE_EVAL_FUNCS(funcs)                                                 \
+    case op_##funcs:                                                           \
+        return fn_##funcs(evaluate_ast(ast->right));
+            ENUMERATE_FUNCTIONS(CASE_EVAL_FUNCS)
+#undef CASE_EVAL_FUNCS
 
         default:
             CHECK_NOT_REACHED();
@@ -83,6 +92,10 @@ static double divide(double a, double b) { return a / b; }
 
 static double negate(double a) { return -a; }
 
+static double fn_cos(double a) { return fn_cos_helper(1, a); }
+
+static double fn_sin(double a) { return a * fn_sin_helper(1, a); }
+
 static double fn_cos_helper(int n, double a) {
     if (n > RECURSIVE_MAX_DEPTH) {
         return 1.0;
@@ -90,8 +103,6 @@ static double fn_cos_helper(int n, double a) {
     return 1.0 -
            a * a / ((2.0 * n - 1.0) * (2.0 * n)) * fn_cos_helper(n + 1, a);
 }
-
-static double fn_cos(double a) { return fn_cos_helper(1, a); }
 
 static double fn_sin_helper(int n, double a) {
     if (n > RECURSIVE_MAX_DEPTH) {
@@ -101,4 +112,14 @@ static double fn_sin_helper(int n, double a) {
            a * a / ((2.0 * n + 1.0) * (2.0 * n)) * fn_sin_helper(n + 1, a);
 }
 
-static double fn_sin(double a) { return a * fn_sin_helper(1, a); }
+static double fn_sqrt(double a) {
+    double x1 = 1.0;
+    double x2;
+
+    do {
+        x2 = x1;
+        x1 = x1 - (x1 * x1 - a) / (2.0 * x1);
+    } while( fabs((x2 - x1) / x1) > EPS );
+
+    return x1;
+}

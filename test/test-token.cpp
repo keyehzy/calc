@@ -74,5 +74,12 @@ TEST(test_token, token_simple) {
         EXPECT_STREQ(normalized_name(name, t.loc), "cos");
     }
 
+    {
+        lexer lex = new_lexer("sqrt");
+        token t   = lex.last_token_;
+        EXPECT_EQ(t.type, tk_sqrt);
+        EXPECT_STREQ(normalized_name(name, t.loc), "sqrt");
+    }
+
     free(name);
 }

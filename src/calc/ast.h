@@ -19,8 +19,11 @@ typedef enum {
     op_binary_div,
     op_unary_plus,
     op_unary_minus,
-    op_sin,
-    op_cos,
+
+#define OP_FUNCS(fn) op_##fn,
+    ENUMERATE_FUNCTIONS(OP_FUNCS)
+#undef OP_FUNCS
+
 } op_kind;
 
 typedef enum {

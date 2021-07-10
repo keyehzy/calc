@@ -79,6 +79,7 @@
     O('/')
 
 #define ENUMERATE_FUNCTIONS(O)                                                 \
+    O(sqrt)                                                                    \
     O(sin)                                                                     \
     O(cos)
 
@@ -98,6 +99,7 @@ typedef enum {
     tk_operator,
     tk_left_paren,
     tk_right_paren,
+    tk_sqrt,
     tk_sin,
     tk_cos,
 } token_type;

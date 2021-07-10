@@ -5,6 +5,8 @@ extern "C" {
 }
 
 TEST(test_eval, eval_simple) {
+    const double eps = 1e-9;
+
     {
         double value = evaluate("42");
         EXPECT_EQ(value, 42.0);
@@ -47,11 +49,16 @@ TEST(test_eval, eval_simple) {
 
     {
         double value = evaluate("cos(2.0)");
-        ASSERT_NEAR(value, -0.416147, 1e-6);
+        ASSERT_NEAR(value, -0.416146836547142, eps);
     }
 
     {
         double value = evaluate("sin(2.0)");
-        ASSERT_NEAR(value, 0.909297, 1e-6);
+        ASSERT_NEAR(value, 0.909297426825681, eps);
+    }
+
+    {
+        double value = evaluate("sqrt(2.0)");
+        ASSERT_NEAR(value, 1.41421356237309, eps);
     }
 }
