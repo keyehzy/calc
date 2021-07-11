@@ -9,6 +9,14 @@
 #define RECURSIVE_MAX_DEPTH 15
 #define EPS 1e-9
 
+#define STATIC_FUNCS(func) static double fn_##func(double);
+ENUMERATE_FUNCTIONS(STATIC_FUNCS)
+#undef STATIC_FUNCS
+
+#define STATIC_CONSTS(constant) static double const_##constant();
+ENUMERATE_CONSTANTS(STATIC_CONSTS)
+#undef STATIC_FUNCS
+
 static double sum(double, double);
 static double sub(double, double);
 static double mul(double, double);
@@ -16,14 +24,9 @@ static double divide(double, double);
 static double negate(double);
 static double exponentiate(double, double);
 
-#define EVAL_FUNCS(func) static double fn_##func(double);
-ENUMERATE_FUNCTIONS(EVAL_FUNCS)
-#undef EVAL_FUNCS
-
 static double fn_sin_helper(int, double);
 static double fn_cos_helper(int, double);
 static double fn_exp_helper(int, double);
-static double const_pi();
 
 double evaluate(const char *input) {
     lexer  lex   = new_lexer(input);
@@ -86,8 +89,11 @@ double evaluate_ast(AST *ast) {
         break;
     }
 
-    case ast_const_pi:
-        return const_pi();
+#define CASE_EVAL_CONSTS(constant)                                             \
+    case ast_const_##constant:                                                 \
+        return const_##constant();
+        ENUMERATE_CONSTANTS(CASE_EVAL_CONSTS)
+#undef CASE_EVAL_CONSTS
 
     default:
         break;
