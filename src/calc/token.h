@@ -86,7 +86,9 @@
     O(exp)                                                                     \
     O(log)
 
-#define ENUMERATE_CONSTANTS(O) O(pi)
+#define ENUMERATE_CONSTANTS(O)                                                 \
+    O(pi)                                                                      \
+    O(e)
 
 #define CASE(num) case num:
 

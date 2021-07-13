@@ -5,7 +5,7 @@ add_executable(
   calc.c
 )
 
-target_link_libraries(calc PRIVATE calc-lib readline)
+target_link_libraries(calc PRIVATE calc-lib readline m)
 
 add_library(
   calc-lib 

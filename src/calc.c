@@ -1,12 +1,16 @@
 #include <calc/eval.h>
 #include <getopt.h>
+#include <readline/history.h>
 #include <readline/readline.h>
 #include <stdlib.h>
 
 int repl() {
     char *buffer;
     while ((buffer = readline("> "))) {
-        printf("%.9lf\n", evaluate(buffer));
+        if (buffer && *buffer) {
+            printf("%.9lf\n", evaluate(buffer));
+            add_history(buffer);
+        }
         free(buffer);
     }
     return 0;
@@ -20,7 +24,9 @@ int main(int argc, char **argv) {
         int c = getopt_long(argc, argv, "e:", long_options, &option_index);
 
         if (c == 'e') {
-            printf("%lf\n", evaluate(optarg));
+            if (optarg && *optarg) {
+                printf("%.9lf\n", evaluate(optarg));
+            }
         }
 
     } else {

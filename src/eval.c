@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define RECURSIVE_MAX_DEPTH 15
 #define EPS 1e-9
 
 #define STATIC_FUNCS(func) static double fn_##func(double);
@@ -17,16 +16,12 @@ ENUMERATE_FUNCTIONS(STATIC_FUNCS)
 ENUMERATE_CONSTANTS(STATIC_CONSTS)
 #undef STATIC_FUNCS
 
-static double sum(double, double);
-static double sub(double, double);
-static double mul(double, double);
-static double divide(double, double);
-static double negate(double);
-static double exponentiate(double, double);
-
-static double fn_sin_helper(int, double);
-static double fn_cos_helper(int, double);
-static double fn_exp_helper(int, double);
+static double sum(double a, double b) { return a + b; }
+static double sub(double a, double b) { return a - b; }
+static double mul(double a, double b) { return a * b; }
+static double divide(double a, double b) { return a / b; }
+static double negate(double a) { return -a; }
+static double exponentiate(double a, double b) { return pow(a, b); }
 
 double evaluate(const char *input) {
     lexer  lex   = new_lexer(input);
@@ -101,87 +96,10 @@ double evaluate_ast(AST *ast) {
     CHECK_NOT_REACHED();
 }
 
-static double sum(double a, double b) { return a + b; }
-
-static double sub(double a, double b) { return a - b; }
-
-static double mul(double a, double b) { return a * b; }
-
-static double divide(double a, double b) { return a / b; }
-
-static double negate(double a) { return -a; }
-
-static double exponentiate(double a, double b) { return fn_exp(b * fn_log(a)); }
-
-static double fn_cos(double a) { return fn_cos_helper(1, a); }
-
-static double fn_sin(double a) { return a * fn_sin_helper(1, a); }
-
-static double fn_exp(double a) { return fn_exp_helper(1, a); }
-
-static double fn_sqrt(double a) {
-    double x1 = 1.0;
-    double x2;
-
-    do {
-        x2 = x1;
-        x1 = x1 - (x1 * x1 - a) / (2.0 * x1);
-    } while (fabs((x2 - x1) / x1) > EPS);
-
-    return x1;
-}
-
-static double fn_log(double a) {
-    double x1 = 1.0;
-    double x2;
-
-    do {
-        x2 = x1;
-        x1 = x1 + a * fn_exp(-x1) - 1.0;
-    } while (fabs((x2 - x1) / x1) > EPS);
-
-    return x1;
-}
-
-static double fn_cos_helper(int n, double a) {
-    if (n > RECURSIVE_MAX_DEPTH) {
-        return 1.0;
-    }
-    return 1.0 -
-           a * a / ((2.0 * n - 1.0) * (2.0 * n)) * fn_cos_helper(n + 1, a);
-}
-
-static double fn_sin_helper(int n, double a) {
-    if (n > RECURSIVE_MAX_DEPTH) {
-        return 1.0;
-    }
-    return 1.0 -
-           a * a / ((2.0 * n + 1.0) * (2.0 * n)) * fn_sin_helper(n + 1, a);
-}
-
-static double fn_exp_helper(int n, double a) {
-    if (n > 2 * RECURSIVE_MAX_DEPTH) { /* veeery slow */
-        return 1.0;
-    }
-    return 1.0 + a / n * fn_exp_helper(n + 1, a);
-}
-
-static double const_pi() {
-    double x  = 1.41421356237309; /* sqrt(2) */
-    double pi = 2.0 + x;          /* 2 + sqrt(2) */
-    double y  = 1.18920711500272; /* 2^(1/4) */
-    double old_x, old_y, old_pi;
-
-    x = 0.5 * (fn_sqrt(x) + 1.0 / fn_sqrt(x));
-
-    do {
-        old_x  = x;
-        old_y  = y;
-        old_pi = pi;
-        x      = 0.5 * (fn_sqrt(old_x) + 1.0 / fn_sqrt(old_x));
-        y      = (y * fn_sqrt(old_x) + 1.0 / fn_sqrt(old_x)) / (old_y + 1.0);
-        pi     = old_pi * (old_x + 1.0) / (old_y + 1.0);
-    } while (fabs((old_pi - pi) / pi) > EPS);
-
-    return pi;
-}
+static double fn_cos(double a) { return cos(a); }
+static double fn_sin(double a) { return sin(a); }
+static double fn_exp(double a) { return exp(a); }
+static double fn_log(double a) { return log(a); }
+static double fn_sqrt(double a) { return sqrt(a); }
+static double const_pi() { return M_PI; }
+static double const_e() { return M_E; }
