@@ -25,17 +25,33 @@ lexer new_lexer(const char *buffer) {
     return lex;
 }
 
+static const char *parse_decimal(const char *beg) {
+    while (1) {
+        switch (beg[0]) {
+            CASE_NUMBERS
+            beg += 1;
+            break;
+
+        default:
+            return beg;
+        }
+    }
+}
+
 static token parse_number(stream *s) {
     const char *begin = S_PEEK(s);
     const char *it    = begin;
-    const char *end   = 0;
+    const char *end;
 
     while (1) {
         switch (it[0]) {
-        case '.':
             CASE_NUMBERS
             it += 1;
             break;
+
+        case '.':
+            it = parse_decimal(it + 1);
+            goto finish;
 
         default:
             goto finish;
@@ -52,7 +68,7 @@ finish:
 static token parse_identifier(stream *s) {
     const char *begin = S_PEEK(s);
     const char *it    = begin;
-    const char *end   = 0;
+    const char *end;
 
     while (1) {
         switch (it[0]) {
