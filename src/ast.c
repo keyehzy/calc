@@ -50,10 +50,10 @@ static AST *invalid_ast() {
 }
 
 static operation operation_from_tk(token t, int context) {
-    char *    name = (char *)malloc(sizeof(char));
+    char *    name = normalized_name(t.loc);
     operation op;
     if (context == 0) { /* binary operations */
-        switch (normalized_name(name, t.loc)[0]) {
+        switch (name[0]) {
         case '+':
             op = (operation){.kind  = op_binary_plus,
                              .prec  = prec_addsub,
@@ -82,7 +82,7 @@ static operation operation_from_tk(token t, int context) {
             CHECK_NOT_REACHED();
         }
     } else { /* unary operation */
-        switch (normalized_name(name, t.loc)[0]) {
+        switch (name[0]) {
         case '+':
             op = (operation){
                 .kind = op_unary_plus, .prec = prec_unary, .assoc = assoc_left};

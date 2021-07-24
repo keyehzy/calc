@@ -69,11 +69,11 @@ finish:
     end       = it;
     s->buffer = end;
 
-    char *  identifier_name = (char *)malloc(sizeof(char));
-    codeloc loc             = (codeloc){.begin = begin, .end = end};
+    char *  identifier_name;
+    codeloc loc = (codeloc){.begin = begin, .end = end};
 
 #define COMPARE(func)                                                          \
-    if (strcmp(normalized_name(identifier_name, loc), #func) == 0) {           \
+    if (strcmp((identifier_name = normalized_name(loc)), #func) == 0) {        \
         free(identifier_name);                                                 \
         return (token){.type = tk_##func, .loc = loc};                         \
     }

@@ -38,8 +38,7 @@ double evaluate_ast(AST *ast) {
         return evaluate_ast(ast->right);
 
     case ast_number_literal: {
-        char *name   = (char *)malloc(sizeof(char));
-        name         = normalized_name(name, ast->loc);
+        char * name  = normalized_name(ast->loc);
         double value = strtod(name, NULL);
         free(name);
         return value;
