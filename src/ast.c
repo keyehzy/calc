@@ -16,13 +16,14 @@ static operation operation_from_tk(token t, int context);
 void free_ast(AST *ast) {
     switch (ast->kind) {
     case ast_binary_op:
-        free(ast->left);
-        free(ast->right);
+        free_ast(ast->left);
+        free_ast(ast->right);
         free(ast);
         break;
 
+    case ast_paren_expr:
     case ast_unary_op:
-        free(ast->right);
+        free_ast(ast->right);
         free(ast);
         break;
 
