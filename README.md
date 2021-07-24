@@ -10,19 +10,23 @@ It is not supposed to be a lisp, so Turing completeness/general programming is n
 Features:
 
 - [X] Evaluate common arithmetic operations such as sum, subtraction, division and multiplication.
+- [x] Named functions such as `sin` and `cosine`.
+- [x] Custom constants such as `pi` and the Euler number `e`.
 - [ ] Arbitrary precision.
 - [ ] Complex numbers algebra.
 - [ ] Vector algebra using vectors and matrices.
 
-Usage:
-```
-# you can use it as a repl
+## Usage:
+You can use it as a repl
+```bash
 $ ./calc
 > 1/2/3/4
 0.041667
-> 
+>
+```
 
-# or using eval
+or evaluate from the terminal emulator
+```bash
 $ ./calc -e 1/2/3/4
 0.041667
 ```
