@@ -20,10 +20,10 @@ TEST(test_ast, ast_simple) {
         lexer lex  = new_lexer("-1");
         AST * ast  = parse_expr1(&lex);
         char *name = NULL;
-        EXPECT_EQ(ast->kind, ast_unary_op);
+        EXPECT_EQ(ast->kind, ast_unary_expr);
         EXPECT_EQ(ast->op.kind, op_unary_minus);
-        EXPECT_EQ(ast->right->kind, ast_number_literal);
-        EXPECT_STREQ((name = normalized_name(ast->right->loc)), "1");
+        EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+        EXPECT_STREQ((name = normalized_name(child_0(ast)->loc)), "1");
         free(name);
         free_ast(ast);
     }
@@ -32,17 +32,17 @@ TEST(test_ast, ast_simple) {
         lexer lex  = new_lexer("42+69");
         AST * ast  = parse_expr1(&lex);
         char *name = NULL;
-        EXPECT_EQ(ast->kind, ast_binary_op);
+        // EXPECT_EQ(ast->kind, ast_binary_op);
         EXPECT_EQ(ast->op.kind, op_binary_plus);
         EXPECT_STREQ((name = normalized_name(ast->loc)), "42+69");
         free(name);
 
-        EXPECT_EQ(ast->left->kind, ast_number_literal);
-        EXPECT_STREQ((name = normalized_name(ast->left->loc)), "42");
+        EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+        EXPECT_STREQ((name = normalized_name(child_0(ast)->loc)), "42");
         free(name);
 
-        EXPECT_EQ(ast->right->kind, ast_number_literal);
-        EXPECT_STREQ((name = normalized_name(ast->right->loc)), "69");
+        EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
+        EXPECT_STREQ((name = normalized_name(child_1(ast)->loc)), "69");
         free(name);
         free_ast(ast);
     }
@@ -50,10 +50,10 @@ TEST(test_ast, ast_simple) {
     {
         lexer lex = new_lexer("42^69");
         AST * ast = parse_expr1(&lex);
-        EXPECT_EQ(ast->kind, ast_binary_op);
+        // EXPECT_EQ(ast->kind, ast_binary_op);
         EXPECT_EQ(ast->op.kind, op_binary_pow);
-        EXPECT_EQ(ast->left->kind, ast_number_literal);
-        EXPECT_EQ(ast->right->kind, ast_number_literal);
+        EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+        EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
         free_ast(ast);
     }
 
@@ -61,14 +61,15 @@ TEST(test_ast, ast_simple) {
         lexer lex  = new_lexer("-42+69");
         AST * ast  = parse_expr1(&lex);
         char *name = NULL;
-        EXPECT_EQ(ast->kind, ast_binary_op);
+        // EXPECT_EQ(ast->kind, ast_binary_op);
 
-        EXPECT_EQ(ast->left->kind, ast_unary_op);
-        EXPECT_STREQ((name = normalized_name(ast->left->right->loc)), "42");
+        EXPECT_EQ(child_0(ast)->kind, ast_unary_expr);
+        EXPECT_STREQ((name = normalized_name(child_0(child_0(ast))->loc)),
+                     "42");
         free(name);
 
-        EXPECT_EQ(ast->right->kind, ast_number_literal);
-        EXPECT_STREQ((name = normalized_name(ast->right->loc)), "69");
+        EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
+        EXPECT_STREQ((name = normalized_name(child_1(ast)->loc)), "69");
         free(name);
         free_ast(ast);
     }
@@ -85,19 +86,57 @@ TEST(test_ast, ast_simple) {
         lexer lex = new_lexer("(1+1)");
         AST * ast = parse_expr1(&lex);
         EXPECT_EQ(ast->kind, ast_paren_expr);
-        EXPECT_EQ(ast->right->op.kind, op_binary_plus);
-        EXPECT_EQ(ast->right->left->kind, ast_number_literal);
-        EXPECT_EQ(ast->right->right->kind, ast_number_literal);
+        EXPECT_EQ(child_0(ast)->op.kind, op_binary_plus);
+        EXPECT_EQ(child_0(child_0(ast))->kind, ast_number_literal);
+        EXPECT_EQ(child_1(child_0(ast))->kind, ast_number_literal);
         free_ast(ast);
+    }
+
+    {
+        lexer lex = new_lexer("1, 1");
+        AST * ast = parse_expr1(&lex);
+        EXPECT_EQ(ast->kind, ast_binary_expr);
+        EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+        EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
+        free_ast(ast);
+    }
+
+    {
+      lexer lex = new_lexer("1, 2, 3");
+      AST * ast = parse_expr1(&lex);
+      EXPECT_EQ(ast->kind, ast_binary_expr);
+      EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+      EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
+      // EXPECT_EQ(child(ast, 2)->kind, ast_number_literal);
+      free_ast(ast);
+    }
+
+    {
+        lexer lex = new_lexer("1 + 2, 3 + 4");
+        AST * ast = parse_expr1(&lex);
+        EXPECT_EQ(ast->kind, ast_binary_expr);
+        EXPECT_EQ(child_0(ast)->kind, ast_binary_expr);
+        EXPECT_EQ(child_1(ast)->kind, ast_binary_expr);
+        free_ast(ast);
+    }
+
+    {
+      lexer lex = new_lexer("1 + 2, 3 + 4, 5 + 6");
+      AST * ast = parse_expr1(&lex);
+      EXPECT_EQ(ast->kind, ast_binary_expr);
+      EXPECT_EQ(child_0(ast)->kind, ast_binary_expr);
+      EXPECT_EQ(child_1(ast)->kind, ast_binary_expr);
+      EXPECT_EQ(child(ast, 2)->kind, ast_binary_expr);
+      free_ast(ast);
     }
 
 #define TEST_AST_FUNCS(func)                                                   \
     {                                                                          \
         lexer lex = new_lexer(#func "(2)");                                    \
         AST * ast = parse_expr1(&lex);                                         \
-        EXPECT_EQ(ast->kind, ast_unary_op);                                    \
+        EXPECT_EQ(ast->kind, ast_unary_expr);                                    \
         EXPECT_EQ(ast->op.kind, op_##func);                                    \
-        EXPECT_EQ(ast->right->right->kind, ast_number_literal);                \
+        EXPECT_EQ(child_0(child_0(ast))->kind, ast_number_literal);            \
         free_ast(ast);                                                         \
     }
     ENUMERATE_FUNCTIONS(TEST_AST_FUNCS)

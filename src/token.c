@@ -136,6 +136,15 @@ static token next_token(stream *s) {
     case ')':
         return parse_singlechar_token(s, tk_right_paren);
 
+    case '{':
+        return parse_singlechar_token(s, tk_left_curly);
+
+    case '}':
+        return parse_singlechar_token(s, tk_right_curly);
+
+    case ',':
+        return parse_singlechar_token(s, tk_comma);
+
     case '\0':
         return (token){.type = tk_eof};
 

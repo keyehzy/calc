@@ -8,19 +8,20 @@ add_executable(
 target_link_libraries(calc PRIVATE calc-lib readline m)
 
 add_library(
-  calc-lib 
+  calc-lib
   calc/assert.h
   calc/ast.h
   calc/codeloc.h
   calc/eval.h
   calc/stream.h
   calc/token.h
+  calc/vector.h
   ast.c
   codeloc.c
   eval.c
   stream.c
   token.c
+  vector.c
 )
 
 target_include_directories(calc-lib PUBLIC .)
-

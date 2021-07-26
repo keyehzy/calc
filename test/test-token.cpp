@@ -92,11 +92,29 @@ TEST(test_token, token_simple) {
     }
 
     {
-        lexer lex  = new_lexer("sin");
+        lexer lex  = new_lexer("{");
         token t    = lex.last_token_;
         char *name = NULL;
-        EXPECT_EQ(t.type, tk_sin);
-        EXPECT_STREQ((name = normalized_name(t.loc)), "sin");
+        EXPECT_EQ(t.type, tk_left_curly);
+        EXPECT_STREQ((name = normalized_name(t.loc)), "{");
+        free(name);
+    }
+
+    {
+        lexer lex  = new_lexer("}");
+        token t    = lex.last_token_;
+        char *name = NULL;
+        EXPECT_EQ(t.type, tk_right_curly);
+        EXPECT_STREQ((name = normalized_name(t.loc)), "}");
+        free(name);
+    }
+
+    {
+        lexer lex  = new_lexer(",");
+        token t    = lex.last_token_;
+        char *name = NULL;
+        EXPECT_EQ(t.type, tk_comma);
+        EXPECT_STREQ((name = normalized_name(t.loc)), ",");
         free(name);
     }
 

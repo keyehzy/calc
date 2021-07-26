@@ -35,7 +35,7 @@ double evaluate_ast(AST *ast) {
     switch (ast->kind) {
 
     case ast_paren_expr:
-        return evaluate_ast(ast->right);
+        return evaluate_ast(child_0(ast));
 
     case ast_number_literal: {
         char * name  = normalized_name(ast->loc);
@@ -44,17 +44,17 @@ double evaluate_ast(AST *ast) {
         return value;
     }
 
-    case ast_unary_op: {
+    case ast_unary_expr: {
         switch (ast->op.kind) {
         case op_unary_plus:
-            return evaluate_ast(ast->right);
+            return evaluate_ast(child_0(ast));
 
         case op_unary_minus:
-            return negate(evaluate_ast(ast->right));
+            return negate(evaluate_ast(child_0(ast)));
 
 #define CASE_EVAL_FUNCS(funcs)                                                 \
     case op_##funcs:                                                           \
-        return fn_##funcs(evaluate_ast(ast->right));
+        return fn_##funcs(evaluate_ast(child_0(ast)));
             ENUMERATE_FUNCTIONS(CASE_EVAL_FUNCS)
 #undef CASE_EVAL_FUNCS
 
@@ -64,19 +64,20 @@ double evaluate_ast(AST *ast) {
         break;
     }
 
-    case ast_binary_op: {
+    case ast_binary_expr: {
         switch (ast->op.kind) {
         case op_binary_plus:
-            return sum(evaluate_ast(ast->left), evaluate_ast(ast->right));
+            return sum(evaluate_ast(child_0(ast)), evaluate_ast(child_1(ast)));
         case op_binary_minus:
-            return sub(evaluate_ast(ast->left), evaluate_ast(ast->right));
+            return sub(evaluate_ast(child_0(ast)), evaluate_ast(child_1(ast)));
         case op_binary_times:
-            return mul(evaluate_ast(ast->left), evaluate_ast(ast->right));
+            return mul(evaluate_ast(child_0(ast)), evaluate_ast(child_1(ast)));
         case op_binary_div:
-            return divide(evaluate_ast(ast->left), evaluate_ast(ast->right));
+            return divide(evaluate_ast(child_0(ast)),
+                          evaluate_ast(child_1(ast)));
         case op_binary_pow:
-            return exponentiate(evaluate_ast(ast->left),
-                                evaluate_ast(ast->right));
+            return exponentiate(evaluate_ast(child_0(ast)),
+                                evaluate_ast(child_1(ast)));
         default:
             CHECK_NOT_REACHED();
         }

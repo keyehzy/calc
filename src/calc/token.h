@@ -106,6 +106,9 @@ typedef enum {
     tk_operator,
     tk_left_paren,
     tk_right_paren,
+    tk_left_curly,
+    tk_right_curly,
+    tk_comma,
 
 #define TOKEN_TYPE_ENUM(func) tk_##func,
     ENUMERATE_FUNCTIONS(TOKEN_TYPE_ENUM) ENUMERATE_CONSTANTS(TOKEN_TYPE_ENUM)
