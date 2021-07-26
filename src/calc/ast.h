@@ -14,6 +14,7 @@ typedef enum {
     ast_unary_expr,
     ast_number_literal,
     ast_paren_expr,
+    ast_curly_expr,
     ast_comma_expr,
 
 #define AST_CONST(constant) ast_const_##constant,

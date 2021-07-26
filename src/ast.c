@@ -143,6 +143,19 @@ static AST *parse_primary_expr(lexer *lex) {
         return ast;
     }
 
+    case tk_left_curly: {
+        L_SKIP();
+        AST *curly_expr = parse_expr1(lex);
+        CHECK(L_PEEK().type == tk_right_curly);
+        L_SKIP();
+        AST *ast = new_ast(ast_curly_expr, curly_expr->loc,
+                           (operation){.kind  = op_none,
+                                       .prec  = prec_paren,
+                                       .assoc = assoc_none});
+        PushVector(&ast->children, curly_expr);
+        return ast;
+    }
+
     case tk_operator: {
         operation op            = operation_from_tk(L_PEEK(), 1);
         codeloc   operator_span = L_PEEK().loc;
@@ -189,11 +202,13 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
     PushVector(&tree, lhs);
     operation new_o;
     AST *     res    = NULL;
+    int comma_flag = /*false*/0;
 
     while (1) {
         switch (L_PEEK().type) {
         case tk_comma: {
             if(commas) goto end;
+            comma_flag = /*true*/1;
             new_o = operation_from_tk(L_PEEK(), 0);
             L_SKIP();
             PushVector(&tree, parse_expr(lex, new_o,/*commas*/1));
@@ -224,6 +239,11 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
 end:
     combine_tree(&tree, new_o);
     res = AST_BACK(&tree);
+
+    if(comma_flag) {                    /* HACK */
+        res->kind = ast_comma_expr;
+    }
+
     free(tree.items);
     return res;
 }

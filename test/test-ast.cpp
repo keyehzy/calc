@@ -95,7 +95,7 @@ TEST(test_ast, ast_simple) {
     {
         lexer lex = new_lexer("1, 1");
         AST * ast = parse_expr1(&lex);
-        EXPECT_EQ(ast->kind, ast_binary_expr);
+        EXPECT_EQ(ast->kind, ast_comma_expr);
         EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
         EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
         free_ast(ast);
@@ -104,17 +104,17 @@ TEST(test_ast, ast_simple) {
     {
       lexer lex = new_lexer("1, 2, 3");
       AST * ast = parse_expr1(&lex);
-      EXPECT_EQ(ast->kind, ast_binary_expr);
+      EXPECT_EQ(ast->kind, ast_comma_expr);
       EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
       EXPECT_EQ(child_1(ast)->kind, ast_number_literal);
-      // EXPECT_EQ(child(ast, 2)->kind, ast_number_literal);
+      EXPECT_EQ(child(ast, 2)->kind, ast_number_literal);
       free_ast(ast);
     }
 
     {
         lexer lex = new_lexer("1 + 2, 3 + 4");
         AST * ast = parse_expr1(&lex);
-        EXPECT_EQ(ast->kind, ast_binary_expr);
+        EXPECT_EQ(ast->kind, ast_comma_expr);
         EXPECT_EQ(child_0(ast)->kind, ast_binary_expr);
         EXPECT_EQ(child_1(ast)->kind, ast_binary_expr);
         free_ast(ast);
@@ -123,10 +123,33 @@ TEST(test_ast, ast_simple) {
     {
       lexer lex = new_lexer("1 + 2, 3 + 4, 5 + 6");
       AST * ast = parse_expr1(&lex);
-      EXPECT_EQ(ast->kind, ast_binary_expr);
+      EXPECT_EQ(ast->kind, ast_comma_expr);
       EXPECT_EQ(child_0(ast)->kind, ast_binary_expr);
       EXPECT_EQ(child_1(ast)->kind, ast_binary_expr);
       EXPECT_EQ(child(ast, 2)->kind, ast_binary_expr);
+      free_ast(ast);
+    }
+
+    {
+      lexer lex = new_lexer("{}");
+      AST * ast = parse_expr1(&lex);
+      EXPECT_EQ(ast->kind, ast_curly_expr);
+      free_ast(ast);
+    }
+
+    {
+      lexer lex = new_lexer("{42}");
+      AST * ast = parse_expr1(&lex);
+      EXPECT_EQ(ast->kind, ast_curly_expr);
+      EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+      free_ast(ast);
+    }
+
+    {
+      lexer lex = new_lexer("{1, 2, 3, 4}");
+      AST * ast = parse_expr1(&lex);
+      EXPECT_EQ(ast->kind, ast_curly_expr);
+      EXPECT_EQ(child_0(ast)->kind, ast_comma_expr);
       free_ast(ast);
     }
 
