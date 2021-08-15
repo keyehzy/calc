@@ -184,7 +184,7 @@ static AST *parse_primary_expr(lexer *lex) {
         codeloc operator_span = L_PEEK().loc;                                  \
         L_SKIP();                                                              \
         CHECK(L_PEEK().type == tk_left_paren);                                 \
-        AST *ast = new_ast(ast_unary_expr, operator_span, op);                   \
+        AST *ast = new_ast(ast_unary_expr, operator_span, op);                 \
         PushVector(&ast->children, parse_primary_expr(lex));                   \
         return ast;                                                            \
     }
@@ -201,17 +201,18 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
     vector tree = NewVector();
     PushVector(&tree, lhs);
     operation new_o;
-    AST *     res    = NULL;
-    int comma_flag = /*false*/0;
+    AST *     res        = NULL;
+    int       comma_flag = /*false*/ 0;
 
     while (1) {
         switch (L_PEEK().type) {
         case tk_comma: {
-            if(commas) goto end;
-            comma_flag = /*true*/1;
-            new_o = operation_from_tk(L_PEEK(), 0);
+            if (commas)
+                goto end;
+            comma_flag = /*true*/ 1;
+            new_o      = operation_from_tk(L_PEEK(), 0);
             L_SKIP();
-            PushVector(&tree, parse_expr(lex, new_o,/*commas*/1));
+            PushVector(&tree, parse_expr(lex, new_o, /*commas*/ 1));
             CHECK(AST_BACK(&tree)->kind != ast_invalid);
             continue;
         }
@@ -240,7 +241,7 @@ end:
     combine_tree(&tree, new_o);
     res = AST_BACK(&tree);
 
-    if(comma_flag) {                    /* HACK */
+    if (comma_flag) { /* HACK */
         res->kind = ast_comma_expr;
     }
 
@@ -249,10 +250,10 @@ end:
 }
 
 static void combine_tree(vector *tree, operation o) {
-    if(Size(tree) > 1) {
+    if (Size(tree) > 1) {
         AST *ast  = new_empty_ast();
         ast->kind = ast_binary_expr;
-        ast->op = o;
+        ast->op   = o;
         ast->loc =
             new_loc(AST_GET(tree, 0)->loc.begin, AST_BACK(tree)->loc.end);
 
@@ -273,7 +274,7 @@ static void combine_tree(vector *tree, operation o) {
 
 AST *parse_expr(lexer *lex, operation o, int commas) {
     AST *ast = parse_primary_expr(lex);
-    if(L_PEEK().type == tk_comma)
+    if (L_PEEK().type == tk_comma)
         return ast;
     return parse_rest_expr(lex, ast, o, commas);
 }
@@ -281,5 +282,5 @@ AST *parse_expr(lexer *lex, operation o, int commas) {
 AST *parse_expr1(lexer *lex) {
     AST *     ast  = parse_primary_expr(lex);
     operation none = {.kind = op_none, .prec = prec_none};
-    return parse_rest_expr(lex, ast, none, /*commas*/0);
+    return parse_rest_expr(lex, ast, /*operation*/ none, /*commas*/ 0);
 }

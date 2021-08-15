@@ -8,31 +8,88 @@
 
 #define EPS 1e-9
 
-#define STATIC_FUNCS(func) static double fn_##func(double);
+#define STATIC_FUNCS(func) static ReturnExpr fn_##func(ReturnExpr);
 ENUMERATE_FUNCTIONS(STATIC_FUNCS)
 #undef STATIC_FUNCS
 
-#define STATIC_CONSTS(constant) static double const_##constant();
+#define STATIC_CONSTS(constant) static ReturnExpr const_##constant();
 ENUMERATE_CONSTANTS(STATIC_CONSTS)
 #undef STATIC_FUNCS
 
-static double sum(double a, double b) { return a + b; }
-static double sub(double a, double b) { return a - b; }
-static double mul(double a, double b) { return a * b; }
-static double divide(double a, double b) { return a / b; }
-static double negate(double a) { return -a; }
-static double exponentiate(double a, double b) { return pow(a, b); }
+#define NUMBER(a) (a).value.double_val
+#define LIST(a) (a).value.list_val
 
-double evaluate(const char *input) {
-    lexer  lex   = new_lexer(input);
-    AST *  ast   = parse_expr1(&lex);
-    double value = evaluate_ast(ast);
+ReturnExpr NewNumber(double val) {
+    ReturnExpr ret;
+    ret.type    = Number;
+    NUMBER(ret) = val;
+    return ret;
+}
+
+ReturnExpr NewList(vector list) {
+    ReturnExpr ret;
+    ret.type  = List;
+    LIST(ret) = list;
+    return ret;
+}
+
+static ReturnExpr sum(ReturnExpr a, ReturnExpr b) {
+    CHECK(a.type == Number);
+    CHECK(b.type == Number);
+    return NewNumber(NUMBER(a) + NUMBER(b));
+}
+static ReturnExpr sub(ReturnExpr a, ReturnExpr b) {
+    CHECK(a.type == Number);
+    CHECK(b.type == Number);
+    return NewNumber(NUMBER(a) - NUMBER(b));
+}
+static ReturnExpr mul(ReturnExpr a, ReturnExpr b) {
+    CHECK(a.type == Number);
+    CHECK(b.type == Number);
+    return NewNumber(NUMBER(a) * NUMBER(b));
+}
+static ReturnExpr divide(ReturnExpr a, ReturnExpr b) {
+    CHECK(a.type == Number);
+    CHECK(b.type == Number);
+    return NewNumber(NUMBER(a) / NUMBER(b));
+}
+static ReturnExpr negate(ReturnExpr a) {
+    CHECK(a.type == Number);
+    return NewNumber(-NUMBER(a));
+}
+static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
+    CHECK(a.type == Number);
+    CHECK(b.type == Number);
+    return NewNumber(pow(NUMBER(a), NUMBER(b)));
+}
+
+ReturnExpr evaluate(const char *input) {
+    lexer      lex   = new_lexer(input);
+    AST *      ast   = parse_expr1(&lex);
+    ReturnExpr value = evaluate_ast(ast);
     free_ast(ast);
     return value;
 }
 
-double evaluate_ast(AST *ast) {
+ReturnExpr evaluate_ast(AST *ast) {
     switch (ast->kind) {
+
+    case ast_curly_expr: {
+        vector list_elements = NewVector();
+        if (child_0(ast)->kind == ast_comma_expr) {
+            for (int i = 0; i < Size(&child_0(ast)->children); i++) {
+                ReturnExpr *elem = malloc(sizeof(ReturnExpr));
+                *elem =
+                    evaluate_ast(child(child_0(ast), i)); /* bad code i think */
+                PushVector(&list_elements, elem);
+            }
+        } else {
+            ReturnExpr *elem = malloc(sizeof(ReturnExpr));
+            *elem = evaluate_ast(child_0(ast)); /* bad code i think */
+            PushVector(&list_elements, elem);
+        }
+        return NewList(list_elements);
+    }
 
     case ast_paren_expr:
         return evaluate_ast(child_0(ast));
@@ -41,7 +98,7 @@ double evaluate_ast(AST *ast) {
         char * name  = normalized_name(ast->loc);
         double value = strtod(name, NULL);
         free(name);
-        return value;
+        return NewNumber(value);
     }
 
     case ast_unary_expr: {
@@ -96,10 +153,31 @@ double evaluate_ast(AST *ast) {
     CHECK_NOT_REACHED();
 }
 
-static double fn_cos(double a) { return cos(a); }
-static double fn_sin(double a) { return sin(a); }
-static double fn_exp(double a) { return exp(a); }
-static double fn_log(double a) { return log(a); }
-static double fn_sqrt(double a) { return sqrt(a); }
-static double const_pi() { return M_PI; }
-static double const_e() { return M_E; }
+static ReturnExpr fn_cos(ReturnExpr a) {
+    CHECK(a.type == Number);
+    return NewNumber(cos(NUMBER(a)));
+}
+
+static ReturnExpr fn_sin(ReturnExpr a) {
+    CHECK(a.type == Number);
+    return NewNumber(sin(NUMBER(a)));
+}
+
+static ReturnExpr fn_exp(ReturnExpr a) {
+    CHECK(a.type == Number);
+    return NewNumber(exp(NUMBER(a)));
+}
+
+static ReturnExpr fn_log(ReturnExpr a) {
+    CHECK(a.type == Number);
+    return NewNumber(log(NUMBER(a)));
+}
+
+static ReturnExpr fn_sqrt(ReturnExpr a) {
+    CHECK(a.type == Number);
+    return NewNumber(sqrt(NUMBER(a)));
+}
+
+static ReturnExpr const_pi() { return NewNumber(M_PI); }
+
+static ReturnExpr const_e() { return NewNumber(M_E); }
