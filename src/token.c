@@ -130,6 +130,9 @@ static token next_token(stream *s) {
         CASE_OPERATORS /* TODO handle multiple character operators */
             return parse_singlechar_token(s, tk_operator);
 
+    case '=':
+        return parse_singlechar_token(s, tk_equal);
+
     case '(':
         return parse_singlechar_token(s, tk_left_paren);
 

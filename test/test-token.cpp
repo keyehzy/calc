@@ -118,6 +118,14 @@ TEST(test_token, token_simple) {
         free(name);
     }
 
+    {
+      lexer lex  = new_lexer("=");
+      token t    = lex.last_token_;
+      char *name = NULL;
+      EXPECT_EQ(t.type, tk_equal);
+      EXPECT_STREQ((name = normalized_name(t.loc)), "=");
+      free(name);
+    }
 #define TEST_TOKEN_FUNCS(func)                                                 \
     {                                                                          \
         lexer lex  = new_lexer(#func);                                         \
