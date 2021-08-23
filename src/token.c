@@ -99,7 +99,7 @@ finish:
     ENUMERATE_CONSTANTS(COMPARE)
 #undef COMPARE
 
-    CHECK_NOT_REACHED();
+    return (token) {.type = tk_identifier, .loc = loc};
 }
 
 static void skip_whitespace(stream *s) {

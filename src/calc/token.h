@@ -103,6 +103,7 @@
 typedef enum {
     tk_eof,
     tk_equal,
+    tk_identifier,
     tk_number,
     tk_operator,
     tk_left_paren,
