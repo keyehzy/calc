@@ -154,14 +154,13 @@ TEST(test_ast, ast_simple) {
     }
 
     {
-      lexer lex = new_lexer("{1} + {1}");
-      AST * ast = parse_expr1(&lex);
-      EXPECT_EQ(ast->kind, ast_binary_expr);
-      EXPECT_EQ(child_0(ast)->kind, ast_curly_expr);
-      EXPECT_EQ(child_1(ast)->kind, ast_curly_expr);
-      free_ast(ast);
+        lexer lex = new_lexer("{1} + {1}");
+        AST * ast = parse_expr1(&lex);
+        EXPECT_EQ(ast->kind, ast_binary_expr);
+        EXPECT_EQ(child_0(ast)->kind, ast_curly_expr);
+        EXPECT_EQ(child_1(ast)->kind, ast_curly_expr);
+        free_ast(ast);
     }
-
 
 #define TEST_AST_FUNCS(func)                                                   \
     {                                                                          \

@@ -33,64 +33,83 @@ ReturnExpr NewList(vector list) {
     return ret;
 }
 
-static ReturnExpr operate_on_list_element(ReturnExpr a, ReturnExpr b,
-                       ReturnExpr (*func) (ReturnExpr, ReturnExpr)) {
+static ReturnExpr
+operate_binary_on_list_element(ReturnExpr a, ReturnExpr b,
+                               ReturnExpr (*func)(ReturnExpr, ReturnExpr)) {
     int N = Size(&LIST(a));
     CHECK(N == Size(&LIST(b)));
-    vector sumlist = NewVector();
-    for(int i = 0; i < N; i++) {
-        ReturnExpr *s1 = (ReturnExpr*) malloc(sizeof(ReturnExpr));
+    vector list = NewVector();
+    for (int i = 0; i < N; i++) {
+        ReturnExpr *s1 = (ReturnExpr *)malloc(sizeof(ReturnExpr));
         ReturnExpr *r1 = GetVector(&LIST(a), i);
         ReturnExpr *r2 = GetVector(&LIST(b), i);
-        *s1 = func(*r1, *r2);
-        PushVector(&sumlist, s1);
+        *s1            = func(*r1, *r2);
+        PushVector(&list, s1);
     }
-    return NewList(sumlist);
+    return NewList(list);
+}
+
+static ReturnExpr
+operate_unary_on_list_element(ReturnExpr a, ReturnExpr (*func)(ReturnExpr)) {
+    int    N    = Size(&LIST(a));
+    vector list = NewVector();
+    for (int i = 0; i < N; i++) {
+        ReturnExpr *s1 = (ReturnExpr *)malloc(sizeof(ReturnExpr));
+        ReturnExpr *r1 = GetVector(&LIST(a), i);
+        *s1            = func(*r1);
+        PushVector(&list, s1);
+    }
+    return NewList(list);
 }
 
 static ReturnExpr sum(ReturnExpr a, ReturnExpr b) {
-    if(a.type == Number && b.type == Number)
+    if (a.type == Number && b.type == Number)
         return NewNumber(NUMBER(a) + NUMBER(b));
     else if (a.type == List && b.type == List) {
-        return operate_on_list_element(a, b, sum);
+        return operate_binary_on_list_element(a, b, sum);
     } else {
         CHECK_NOT_REACHED();
     }
 }
 
 static ReturnExpr sub(ReturnExpr a, ReturnExpr b) {
-    if(a.type == Number && b.type == Number)
+    if (a.type == Number && b.type == Number)
         return NewNumber(NUMBER(a) - NUMBER(b));
     else if (a.type == List && b.type == List) {
-        return operate_on_list_element(a, b, sub);
+        return operate_binary_on_list_element(a, b, sub);
     } else {
         CHECK_NOT_REACHED();
     }
 }
 
 static ReturnExpr mul(ReturnExpr a, ReturnExpr b) {
-    if(a.type == Number && b.type == Number)
+    if (a.type == Number && b.type == Number)
         return NewNumber(NUMBER(a) * NUMBER(b));
     else if (a.type == List && b.type == List) {
-        return operate_on_list_element(a, b, mul);
+        return operate_binary_on_list_element(a, b, mul);
     } else {
         CHECK_NOT_REACHED();
     }
 }
 
 static ReturnExpr divide(ReturnExpr a, ReturnExpr b) {
-    if(a.type == Number && b.type == Number)
+    if (a.type == Number && b.type == Number)
         return NewNumber(NUMBER(a) / NUMBER(b));
     else if (a.type == List && b.type == List) {
-        return operate_on_list_element(a, b, divide);
+        return operate_binary_on_list_element(a, b, divide);
     } else {
         CHECK_NOT_REACHED();
     }
 }
 
 static ReturnExpr negate(ReturnExpr a) {
-    CHECK(a.type == Number);
-    return NewNumber(-NUMBER(a));
+    if (a.type == Number) {
+        return NewNumber(-NUMBER(a));
+    } else if (a.type == List) {
+        return operate_unary_on_list_element(a, negate);
+    } else {
+        CHECK_NOT_REACHED();
+    }
 }
 
 static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
@@ -189,30 +208,18 @@ ReturnExpr evaluate_ast(AST *ast) {
     CHECK_NOT_REACHED();
 }
 
-static ReturnExpr fn_cos(ReturnExpr a) {
-    CHECK(a.type == Number);
-    return NewNumber(cos(NUMBER(a)));
-}
-
-static ReturnExpr fn_sin(ReturnExpr a) {
-    CHECK(a.type == Number);
-    return NewNumber(sin(NUMBER(a)));
-}
-
-static ReturnExpr fn_exp(ReturnExpr a) {
-    CHECK(a.type == Number);
-    return NewNumber(exp(NUMBER(a)));
-}
-
-static ReturnExpr fn_log(ReturnExpr a) {
-    CHECK(a.type == Number);
-    return NewNumber(log(NUMBER(a)));
-}
-
-static ReturnExpr fn_sqrt(ReturnExpr a) {
-    CHECK(a.type == Number);
-    return NewNumber(sqrt(NUMBER(a)));
-}
+#define CASE_BUILTIN_FUNCS(funcs)                                              \
+    static ReturnExpr fn_##funcs(ReturnExpr a) {                               \
+        if (a.type == Number) {                                                \
+            return NewNumber(funcs(NUMBER(a)));                                \
+        } else if (a.type == List) {                                           \
+            return operate_unary_on_list_element(a, fn_##funcs);               \
+        } else {                                                               \
+            CHECK_NOT_REACHED();                                               \
+        }                                                                      \
+    }
+ENUMERATE_FUNCTIONS(CASE_BUILTIN_FUNCS)
+#undef CASE_BUILTIN_FUNCS
 
 static ReturnExpr const_pi() { return NewNumber(M_PI); }
 
