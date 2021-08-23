@@ -33,30 +33,66 @@ ReturnExpr NewList(vector list) {
     return ret;
 }
 
+static ReturnExpr operate_on_list_element(ReturnExpr a, ReturnExpr b,
+                       ReturnExpr (*func) (ReturnExpr, ReturnExpr)) {
+    int N = Size(&LIST(a));
+    CHECK(N == Size(&LIST(b)));
+    vector sumlist = NewVector();
+    for(int i = 0; i < N; i++) {
+        ReturnExpr *s1 = (ReturnExpr*) malloc(sizeof(ReturnExpr));
+        ReturnExpr *r1 = GetVector(&LIST(a), i);
+        ReturnExpr *r2 = GetVector(&LIST(b), i);
+        *s1 = func(*r1, *r2);
+        PushVector(&sumlist, s1);
+    }
+    return NewList(sumlist);
+}
+
 static ReturnExpr sum(ReturnExpr a, ReturnExpr b) {
-    CHECK(a.type == Number);
-    CHECK(b.type == Number);
-    return NewNumber(NUMBER(a) + NUMBER(b));
+    if(a.type == Number && b.type == Number)
+        return NewNumber(NUMBER(a) + NUMBER(b));
+    else if (a.type == List && b.type == List) {
+        return operate_on_list_element(a, b, sum);
+    } else {
+        CHECK_NOT_REACHED();
+    }
 }
+
 static ReturnExpr sub(ReturnExpr a, ReturnExpr b) {
-    CHECK(a.type == Number);
-    CHECK(b.type == Number);
-    return NewNumber(NUMBER(a) - NUMBER(b));
+    if(a.type == Number && b.type == Number)
+        return NewNumber(NUMBER(a) - NUMBER(b));
+    else if (a.type == List && b.type == List) {
+        return operate_on_list_element(a, b, sub);
+    } else {
+        CHECK_NOT_REACHED();
+    }
 }
+
 static ReturnExpr mul(ReturnExpr a, ReturnExpr b) {
-    CHECK(a.type == Number);
-    CHECK(b.type == Number);
-    return NewNumber(NUMBER(a) * NUMBER(b));
+    if(a.type == Number && b.type == Number)
+        return NewNumber(NUMBER(a) * NUMBER(b));
+    else if (a.type == List && b.type == List) {
+        return operate_on_list_element(a, b, mul);
+    } else {
+        CHECK_NOT_REACHED();
+    }
 }
+
 static ReturnExpr divide(ReturnExpr a, ReturnExpr b) {
-    CHECK(a.type == Number);
-    CHECK(b.type == Number);
-    return NewNumber(NUMBER(a) / NUMBER(b));
+    if(a.type == Number && b.type == Number)
+        return NewNumber(NUMBER(a) / NUMBER(b));
+    else if (a.type == List && b.type == List) {
+        return operate_on_list_element(a, b, divide);
+    } else {
+        CHECK_NOT_REACHED();
+    }
 }
+
 static ReturnExpr negate(ReturnExpr a) {
     CHECK(a.type == Number);
     return NewNumber(-NUMBER(a));
 }
+
 static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
     CHECK(a.type == Number);
     CHECK(b.type == Number);
