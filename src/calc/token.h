@@ -90,6 +90,9 @@
     O(pi)                                                                      \
     O(e)
 
+#define ENUMERATE_NAMED_TOKENS(O)               \
+    O(let)
+
 #define CASE(num) case num:
 
 #define CASE_NUMBERS ENUMERATE_NUMBERS(CASE)
@@ -104,6 +107,7 @@ typedef enum {
     tk_eof,
     tk_equal,
     tk_identifier,
+    tk_let,
     tk_number,
     tk_operator,
     tk_left_paren,

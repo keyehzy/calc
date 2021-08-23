@@ -1,4 +1,3 @@
-#include "calc/vector.h"
 #include <calc/assert.h>
 #include <calc/ast.h>
 #include <calc/token.h>

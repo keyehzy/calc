@@ -95,6 +95,7 @@ finish:
     } else {                                                                   \
         free(identifier_name);                                                 \
     }
+    ENUMERATE_NAMED_TOKENS(COMPARE)
     ENUMERATE_FUNCTIONS(COMPARE)
     ENUMERATE_CONSTANTS(COMPARE)
 #undef COMPARE
