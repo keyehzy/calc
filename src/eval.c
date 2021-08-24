@@ -1,4 +1,3 @@
-#include "calc/vector.h"
 #include <calc/assert.h>
 #include <calc/ast.h>
 #include <calc/eval.h>
@@ -6,6 +5,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define EPS 1e-9
 
@@ -20,9 +20,6 @@ ENUMERATE_CONSTANTS(STATIC_CONSTS)
 #define NUMBER(a) (a).value.double_val
 #define LIST(a) (a).value.list_val
 
-
-
-
 /* Evaluator */
 
 typedef struct {
@@ -35,18 +32,19 @@ static evaluator NewEvaluator() {
     return ev;
 }
 
-static void push_scope(evaluator *ev, AST* scope) {
+static void push_scope(evaluator *ev, AST *scope) {
     PushVector(&ev->scope, scope);
 }
 
 static void pop_scope(evaluator *ev) { PopVector(&ev->scope); }
 
-static AST* get_scope(evaluator *ev) { return AST_BACK(&ev->scope); }
+static AST *get_scope(evaluator *ev) { return AST_BACK(&ev->scope); }
 
+/* Variables */
 
-
-
-
+static int compare_variable(AST *a, AST *b) {
+    return strcmp(normalized_name(a->loc), normalized_name(b->loc));
+}
 
 static ReturnExpr NewNumber(double val) {
     ReturnExpr ret;
@@ -167,6 +165,22 @@ static ReturnExpr const_e() { return NewNumber(M_E); }
 ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
     switch (ast->kind) {
 
+    case ast_variable: {
+        AST *  actual_scope = AST_BACK(&ev->scope);
+        vector var_decl     = actual_scope->var_declarations;
+        for (int i = 0; i < Size(&var_decl); i++) {
+
+            AST *decl   = GetVector(&var_decl, i);
+            AST *assign = child_0(decl);
+
+            if (compare_variable(ast, child_0(assign)) == 0) {
+                return evaluate_ast(child_1(assign), ev);
+            }
+        }
+        CHECK_NOT_REACHED(); /* error: use of undeclared variable */
+        break;
+    }
+
     case ast_module: {
         push_scope(ev, ast);
         vector statements = NewVector();
@@ -186,8 +200,8 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
         if (child_0(ast)->kind == ast_comma_expr) {
             for (int i = 0; i < Size(&child_0(ast)->children); i++) {
                 ReturnExpr *elem = malloc(sizeof(ReturnExpr));
-                *elem =
-                    evaluate_ast(child(child_0(ast), i), ev); /* bad code i think */
+                *elem            = evaluate_ast(child(child_0(ast), i),
+                                     ev); /* bad code i think */
                 PushVector(&list_elements, elem);
             }
         } else {
@@ -231,11 +245,14 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
     case ast_binary_expr: {
         switch (ast->op.kind) {
         case op_binary_plus:
-            return sum(evaluate_ast(child_0(ast), ev), evaluate_ast(child_1(ast), ev));
+            return sum(evaluate_ast(child_0(ast), ev),
+                       evaluate_ast(child_1(ast), ev));
         case op_binary_minus:
-            return sub(evaluate_ast(child_0(ast), ev), evaluate_ast(child_1(ast), ev));
+            return sub(evaluate_ast(child_0(ast), ev),
+                       evaluate_ast(child_1(ast), ev));
         case op_binary_times:
-            return mul(evaluate_ast(child_0(ast), ev), evaluate_ast(child_1(ast), ev));
+            return mul(evaluate_ast(child_0(ast), ev),
+                       evaluate_ast(child_1(ast), ev));
         case op_binary_div:
             return divide(evaluate_ast(child_0(ast), ev),
                           evaluate_ast(child_1(ast), ev));

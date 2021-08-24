@@ -46,9 +46,11 @@ static AST *new_empty_ast() {
 }
 
 static AST *make_ast(ast_kind kind) {
-    AST *ast      = (AST *)malloc(sizeof(AST));
-    ast->kind     = kind;
-    ast->children = NewVector();
+    AST *ast              = (AST *)malloc(sizeof(AST));
+    ast->kind             = kind;
+    ast->children         = NewVector();
+    ast->var_declarations = NewVector();
+    ast->fn_declarations  = NewVector();
     return ast;
 }
 
@@ -354,9 +356,19 @@ AST *parse_program(lexer *lex) {
                                       * variables and functions */
     while (1) {
         AST *statement = parse_statement(lex);
-        if (statement->kind != ast_invalid) {
+
+        switch (statement->kind) {
+        case ast_declaration: /* these were inserted on the block scope */
+            continue;
+
+        case ast_invalid:
+            break;
+
+        default:
             PushVector(&module->children, statement);
+            break;
         }
+
         switch (L_PEEK().type) {
         case tk_eof:
             goto end;
@@ -364,8 +376,6 @@ AST *parse_program(lexer *lex) {
         case tk_semicolon:
             L_SKIP();
             break;
-
-            /* we may want to check if there something else trailling  */
 
         default:
             CHECK_NOT_REACHED();
