@@ -12,6 +12,7 @@ typedef enum {
     ast_invalid,
 
     /* statements */
+    ast_assignment,
     ast_declaration,
     ast_block,
     ast_module,

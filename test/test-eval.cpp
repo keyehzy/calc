@@ -85,4 +85,10 @@ TEST(test_eval, eval_simple) {
         double value = evaluate_to_number("pi");
         ASSERT_NEAR(value, 3.14159265358979, eps);
     }
+
+    {
+      double value = evaluate_to_number("2+2; sqrt(3); pi;");
+      ASSERT_NEAR(value, 3.14159265358979, eps);
+    }
+
 }

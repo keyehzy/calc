@@ -1,3 +1,4 @@
+#include "calc/vector.h"
 #include <calc/assert.h>
 #include <calc/ast.h>
 #include <calc/token.h>
@@ -196,7 +197,7 @@ static AST *parse_primary_expr(lexer *lex) {
 static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
     vector tree = NewVector();
     PushVector(&tree, lhs);
-    operation new_o;
+    operation new_o      = {0};
     AST *     res        = NULL;
     int       comma_flag = /*false*/ 0;
 
@@ -223,16 +224,25 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
             L_SKIP();
 
             PushVector(&tree, parse_expr(lex, new_o, commas));
-            CHECK(AST_BACK(&tree)->kind != ast_invalid);
+            CHECK(AST_BACK(&tree)->kind != ast_invalid); /* error: invalid
+                                                          * operand binary
+                                                          * expression */
             break;
         }
 
         case tk_equal: {
             CHECK(lhs->kind == ast_variable);
+
             L_SKIP();
+
             PushVector(&tree, parse_expr1(lex));
-            CHECK(AST_BACK(&tree)->kind != ast_invalid);
-            break;
+            CHECK(AST_BACK(&tree)->kind != ast_invalid); /* error: invalid
+                                                          * operand for
+                                                          * assignment */
+
+            combine_tree(&tree, (operation){0});
+            AST_BACK(&tree)->kind = ast_assignment;
+            goto end;
         }
 
         default:
@@ -332,7 +342,8 @@ static AST *parse_statement(lexer *lex) {
     }
 
     default:
-        return invalid_ast();
+        return parse_expr1(lex); /* try to parse as a trailling
+                                  * expression */
     }
 }
 
@@ -349,6 +360,10 @@ AST *parse_program(lexer *lex) {
         switch (L_PEEK().type) {
         case tk_eof:
             goto end;
+
+        case tk_semicolon:
+            L_SKIP();
+            break;
 
             /* we may want to check if there something else trailling  */
 

@@ -1,3 +1,4 @@
+#include "calc/vector.h"
 #include <calc/assert.h>
 #include <calc/ast.h>
 #include <calc/eval.h>
@@ -19,14 +20,42 @@ ENUMERATE_CONSTANTS(STATIC_CONSTS)
 #define NUMBER(a) (a).value.double_val
 #define LIST(a) (a).value.list_val
 
-ReturnExpr NewNumber(double val) {
+
+
+
+/* Evaluator */
+
+typedef struct {
+    vector scope;
+} evaluator;
+
+static evaluator NewEvaluator() {
+    evaluator ev;
+    ev.scope = NewVector();
+    return ev;
+}
+
+static void push_scope(evaluator *ev, AST* scope) {
+    PushVector(&ev->scope, scope);
+}
+
+static void pop_scope(evaluator *ev) { PopVector(&ev->scope); }
+
+static AST* get_scope(evaluator *ev) { return AST_BACK(&ev->scope); }
+
+
+
+
+
+
+static ReturnExpr NewNumber(double val) {
     ReturnExpr ret;
     ret.type    = Number;
     NUMBER(ret) = val;
     return ret;
 }
 
-ReturnExpr NewList(vector list) {
+static ReturnExpr NewList(vector list) {
     ReturnExpr ret;
     ret.type  = List;
     LIST(ret) = list;
@@ -118,16 +147,39 @@ static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
     return NewNumber(pow(NUMBER(a), NUMBER(b)));
 }
 
-ReturnExpr evaluate(const char *input) {
-    lexer      lex   = new_lexer(input);
-    AST *      ast   = parse_expr1(&lex);
-    ReturnExpr value = evaluate_ast(ast);
-    free_ast(ast);
-    return value;
-}
+#define CASE_BUILTIN_FUNCS(funcs)                                              \
+    static ReturnExpr fn_##funcs(ReturnExpr a) {                               \
+        if (a.type == Number) {                                                \
+            return NewNumber(funcs(NUMBER(a)));                                \
+        } else if (a.type == List) {                                           \
+            return operate_unary_on_list_element(a, fn_##funcs);               \
+        } else {                                                               \
+            CHECK_NOT_REACHED();                                               \
+        }                                                                      \
+    }
+ENUMERATE_FUNCTIONS(CASE_BUILTIN_FUNCS)
+#undef CASE_BUILTIN_FUNCS
 
-ReturnExpr evaluate_ast(AST *ast) {
+static ReturnExpr const_pi() { return NewNumber(M_PI); }
+
+static ReturnExpr const_e() { return NewNumber(M_E); }
+
+ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
     switch (ast->kind) {
+
+    case ast_module: {
+        push_scope(ev, ast);
+        vector statements = NewVector();
+        for (int i = 0; i < Size(&ast->children); i++) {
+            ReturnExpr *elem = malloc(sizeof(ReturnExpr));
+            *elem            = evaluate_ast(GetVector(&ast->children, i), ev);
+            PushVector(&statements, elem);
+        }
+        pop_scope(ev);
+        return *((ReturnExpr *)BackVector(&statements)); /* module returns
+                                                          * result of last
+                                                          * expression */
+    }
 
     case ast_curly_expr: {
         vector list_elements = NewVector();
@@ -135,19 +187,19 @@ ReturnExpr evaluate_ast(AST *ast) {
             for (int i = 0; i < Size(&child_0(ast)->children); i++) {
                 ReturnExpr *elem = malloc(sizeof(ReturnExpr));
                 *elem =
-                    evaluate_ast(child(child_0(ast), i)); /* bad code i think */
+                    evaluate_ast(child(child_0(ast), i), ev); /* bad code i think */
                 PushVector(&list_elements, elem);
             }
         } else {
             ReturnExpr *elem = malloc(sizeof(ReturnExpr));
-            *elem = evaluate_ast(child_0(ast)); /* bad code i think */
+            *elem = evaluate_ast(child_0(ast), ev); /* bad code i think */
             PushVector(&list_elements, elem);
         }
         return NewList(list_elements);
     }
 
     case ast_paren_expr:
-        return evaluate_ast(child_0(ast));
+        return evaluate_ast(child_0(ast), ev);
 
     case ast_number_literal: {
         char * name  = normalized_name(ast->loc);
@@ -159,14 +211,14 @@ ReturnExpr evaluate_ast(AST *ast) {
     case ast_unary_expr: {
         switch (ast->op.kind) {
         case op_unary_plus:
-            return evaluate_ast(child_0(ast));
+            return evaluate_ast(child_0(ast), ev);
 
         case op_unary_minus:
-            return negate(evaluate_ast(child_0(ast)));
+            return negate(evaluate_ast(child_0(ast), ev));
 
 #define CASE_EVAL_FUNCS(funcs)                                                 \
     case op_##funcs:                                                           \
-        return fn_##funcs(evaluate_ast(child_0(ast)));
+        return fn_##funcs(evaluate_ast(child_0(ast), ev));
             ENUMERATE_FUNCTIONS(CASE_EVAL_FUNCS)
 #undef CASE_EVAL_FUNCS
 
@@ -179,17 +231,17 @@ ReturnExpr evaluate_ast(AST *ast) {
     case ast_binary_expr: {
         switch (ast->op.kind) {
         case op_binary_plus:
-            return sum(evaluate_ast(child_0(ast)), evaluate_ast(child_1(ast)));
+            return sum(evaluate_ast(child_0(ast), ev), evaluate_ast(child_1(ast), ev));
         case op_binary_minus:
-            return sub(evaluate_ast(child_0(ast)), evaluate_ast(child_1(ast)));
+            return sub(evaluate_ast(child_0(ast), ev), evaluate_ast(child_1(ast), ev));
         case op_binary_times:
-            return mul(evaluate_ast(child_0(ast)), evaluate_ast(child_1(ast)));
+            return mul(evaluate_ast(child_0(ast), ev), evaluate_ast(child_1(ast), ev));
         case op_binary_div:
-            return divide(evaluate_ast(child_0(ast)),
-                          evaluate_ast(child_1(ast)));
+            return divide(evaluate_ast(child_0(ast), ev),
+                          evaluate_ast(child_1(ast), ev));
         case op_binary_pow:
-            return exponentiate(evaluate_ast(child_0(ast)),
-                                evaluate_ast(child_1(ast)));
+            return exponentiate(evaluate_ast(child_0(ast), ev),
+                                evaluate_ast(child_1(ast), ev));
         default:
             CHECK_NOT_REACHED();
         }
@@ -208,19 +260,11 @@ ReturnExpr evaluate_ast(AST *ast) {
     CHECK_NOT_REACHED();
 }
 
-#define CASE_BUILTIN_FUNCS(funcs)                                              \
-    static ReturnExpr fn_##funcs(ReturnExpr a) {                               \
-        if (a.type == Number) {                                                \
-            return NewNumber(funcs(NUMBER(a)));                                \
-        } else if (a.type == List) {                                           \
-            return operate_unary_on_list_element(a, fn_##funcs);               \
-        } else {                                                               \
-            CHECK_NOT_REACHED();                                               \
-        }                                                                      \
-    }
-ENUMERATE_FUNCTIONS(CASE_BUILTIN_FUNCS)
-#undef CASE_BUILTIN_FUNCS
-
-static ReturnExpr const_pi() { return NewNumber(M_PI); }
-
-static ReturnExpr const_e() { return NewNumber(M_E); }
+ReturnExpr evaluate(const char *input) {
+    lexer      lex   = new_lexer(input);
+    AST *      ast   = parse_program(&lex);
+    evaluator  ev    = NewEvaluator();
+    ReturnExpr value = evaluate_ast(ast, &ev);
+    free_ast(ast);
+    return value;
+}

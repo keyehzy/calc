@@ -10,7 +10,4 @@ typedef struct {
     } value;
 } ReturnExpr;
 
-ReturnExpr NewNumber(double);
-ReturnExpr NewList(vector);
-ReturnExpr evaluate_ast(AST *);
 ReturnExpr evaluate(const char *);

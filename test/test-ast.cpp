@@ -19,9 +19,25 @@ TEST(test_ast, test_statements) {
         AST * ast = parse_program(&lex);
         EXPECT_EQ(ast->kind, ast_module);
         EXPECT_EQ(child_0(ast)->kind, ast_declaration);
-        EXPECT_EQ(child_0(child_0(ast))->kind, ast_binary_expr);
+        EXPECT_EQ(child_0(child_0(ast))->kind, ast_assignment);
         EXPECT_EQ(child_0(child_0((child_0(ast))))->kind, ast_variable);
         EXPECT_EQ(child_1(child_0((child_0(ast))))->kind, ast_number_literal);
+        free_ast(ast);
+    }
+
+    {
+        lexer lex = new_lexer("42");
+        AST * ast = parse_program(&lex);
+        EXPECT_EQ(ast->kind, ast_module);
+        EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+        free_ast(ast);
+    }
+
+    {
+        lexer lex = new_lexer("-1");
+        AST * ast = parse_program(&lex);
+        EXPECT_EQ(ast->kind, ast_module);
+        EXPECT_EQ(child_0(ast)->kind, ast_unary_expr);
         free_ast(ast);
     }
 }
