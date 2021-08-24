@@ -130,6 +130,12 @@ static operation operation_from_tk(token t, int context) {
 static AST *parse_primary_expr(lexer *lex) {
     switch (L_PEEK().type) {
 
+    case tk_identifier: {
+        codeloc identifier_span = L_PEEK().loc;
+        L_SKIP();
+        return new_ast(ast_variable, identifier_span, (operation){0});
+    }
+
     case tk_number: {
         codeloc number_span = L_PEEK().loc;
         L_SKIP();
@@ -301,9 +307,9 @@ AST *parse_expr1(lexer *lex) {
 }
 
 static AST *parse_let_statement(lexer *lex) {
-    L_SKIP(); /* skip 'let' */
-
     const char *begin = L_PEEK().loc.begin;
+
+    L_SKIP(); /* skip 'let' */
 
     if (L_PEEK().type == tk_identifier) {
         AST *lhs = make_ast(ast_variable);
@@ -334,8 +340,14 @@ static AST *parse_statement(lexer *lex) {
         AST *identifier = make_ast(ast_variable);
         identifier->loc = L_PEEK().loc;
         L_SKIP();
-        L_SKIP_CHECKED(tk_semicolon);
-        return identifier;
+
+        if (L_PEEK().type == tk_semicolon) {
+            L_SKIP();
+            return identifier;
+        } else {
+            return parse_rest_expr(lex, identifier, (operation){0},
+                                   /*commas*/ 0);
+        }
     }
 
     case tk_let: {
@@ -357,28 +369,20 @@ AST *parse_program(lexer *lex) {
     while (1) {
         AST *statement = parse_statement(lex);
 
-        switch (statement->kind) {
-        case ast_declaration: /* these were inserted on the block scope */
-            continue;
-
-        case ast_invalid:
-            break;
-
-        default:
+        if (statement->kind != ast_invalid) {
             PushVector(&module->children, statement);
-            break;
-        }
+        } else {
+            switch (L_PEEK().type) {
+            case tk_eof:
+                goto end;
 
-        switch (L_PEEK().type) {
-        case tk_eof:
-            goto end;
+            case tk_semicolon:
+                L_SKIP();
+                break;
 
-        case tk_semicolon:
-            L_SKIP();
-            break;
-
-        default:
-            CHECK_NOT_REACHED();
+            default:
+                CHECK_NOT_REACHED();
+            }
         }
     }
 end:

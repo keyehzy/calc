@@ -166,8 +166,7 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
     switch (ast->kind) {
 
     case ast_variable: {
-        AST *  actual_scope = AST_BACK(&ev->scope);
-        vector var_decl     = actual_scope->var_declarations;
+        vector var_decl = get_scope(ev)->var_declarations;
         for (int i = 0; i < Size(&var_decl); i++) {
 
             AST *decl   = GetVector(&var_decl, i);
@@ -179,6 +178,11 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
         }
         CHECK_NOT_REACHED(); /* error: use of undeclared variable */
         break;
+    }
+
+    case ast_declaration: {
+        AST *assign = child_0(ast);
+        return evaluate_ast(child_1(assign), ev);
     }
 
     case ast_module: {

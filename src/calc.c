@@ -22,6 +22,9 @@ void rec_eval(ReturnExpr ret, int nested) {
         printf("}");
         break;
     }
+    if(nested == 0) {
+      printf("\n");
+    }
 }
 
 int repl() {
@@ -30,7 +33,6 @@ int repl() {
         if (buffer && *buffer) {
             ReturnExpr ret = evaluate(buffer);
             rec_eval(ret, /*nested*/ 0);
-            printf("\n");
             add_history(buffer);
         }
         free(buffer);
@@ -49,7 +51,6 @@ int main(int argc, char **argv) {
             if (optarg && *optarg) {
                 ReturnExpr ret = evaluate(optarg);
                 rec_eval(ret, /*nested*/ 0);
-                printf("\n");
             }
         }
 

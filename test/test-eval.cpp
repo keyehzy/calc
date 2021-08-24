@@ -92,7 +92,22 @@ TEST(test_eval, eval_simple) {
     }
 
     {
+        double value = evaluate_to_number("let x = 2;");
+        ASSERT_NEAR(value, 2.0, eps);
+    }
+
+    {
         double value = evaluate_to_number("let x = sqrt(9); x;");
+        ASSERT_NEAR(value, 3.0, eps);
+    }
+
+    {
+        double value = evaluate_to_number("let x = 2; let y = x;");
+        ASSERT_NEAR(value, 2.0, eps);
+    }
+
+    {
+        double value = evaluate_to_number("let x = 2; x + 1;");
         ASSERT_NEAR(value, 3.0, eps);
     }
 }

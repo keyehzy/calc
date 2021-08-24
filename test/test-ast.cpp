@@ -18,7 +18,7 @@ TEST(test_ast, test_statements) {
         lexer lex = new_lexer("let x = 42;");
         AST * ast = parse_program(&lex);
         EXPECT_EQ(ast->kind, ast_module);
-        EXPECT_EQ(AST_BACK(&ast->var_declarations)->kind, ast_declaration);
+        EXPECT_EQ(child_0(ast)->kind, ast_declaration);
         free_ast(ast);
     }
 
