@@ -29,17 +29,24 @@ AST *child(AST *ast, int i) {
     return GetVector(&ast->children, i);
 }
 
-void free_ast(AST *ast) {
-    int n = Size(&ast->children);
-    for (int i = 0; i < n; i++) {
-        free_ast(GetVector(&ast->children, i));
-    }
+void free_ast(AST *ast) { /* FIXME */
+    /* int n = Size(&ast->children); */
+    /* for (int i = 0; i < n; i++) { */
+    /*     free_ast(GetVector(&ast->children, i)); */
+    /* } */
     free(ast->children.items);
     free(ast);
 }
 
 static AST *new_empty_ast() {
     AST *ast      = (AST *)malloc(sizeof(AST));
+    ast->children = NewVector();
+    return ast;
+}
+
+static AST *make_ast(ast_kind kind) {
+    AST *ast      = (AST *)malloc(sizeof(AST));
+    ast->kind     = kind;
     ast->children = NewVector();
     return ast;
 }
@@ -123,10 +130,7 @@ static AST *parse_primary_expr(lexer *lex) {
     case tk_number: {
         codeloc number_span = L_PEEK().loc;
         L_SKIP();
-        return new_ast(ast_number_literal, number_span,
-                       (operation){.kind  = op_none,
-                                   .prec  = prec_none,
-                                   .assoc = assoc_none});
+        return new_ast(ast_number_literal, number_span, (operation){0});
     }
 
     case tk_left_paren: {
@@ -135,9 +139,7 @@ static AST *parse_primary_expr(lexer *lex) {
         CHECK(L_PEEK().type == tk_right_paren);
         L_SKIP();
         AST *ast = new_ast(ast_paren_expr, paren_expr->loc,
-                           (operation){.kind  = op_none,
-                                       .prec  = prec_paren,
-                                       .assoc = assoc_none});
+                           (operation){.prec = prec_paren});
         PushVector(&ast->children, paren_expr);
         return ast;
     }
@@ -148,9 +150,7 @@ static AST *parse_primary_expr(lexer *lex) {
         CHECK(L_PEEK().type == tk_right_curly);
         L_SKIP();
         AST *ast = new_ast(ast_curly_expr, curly_expr->loc,
-                           (operation){.kind  = op_none,
-                                       .prec  = prec_paren,
-                                       .assoc = assoc_none});
+                           (operation){.prec = prec_paren});
         PushVector(&ast->children, curly_expr);
         return ast;
     }
@@ -168,10 +168,7 @@ static AST *parse_primary_expr(lexer *lex) {
     case tk_##constant: {                                                      \
         codeloc const_span = L_PEEK().loc;                                     \
         L_SKIP();                                                              \
-        return new_ast(ast_const_##constant, const_span,                       \
-                       (operation){.kind  = op_none,                           \
-                                   .prec  = prec_none,                         \
-                                   .assoc = assoc_none});                      \
+        return new_ast(ast_const_##constant, const_span, (operation){0});      \
     }
         ENUMERATE_CONSTANTS(PARSE_CONST);
 #undef PARSE_CONST
@@ -230,6 +227,14 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
             break;
         }
 
+        case tk_equal: {
+            CHECK(lhs->kind == ast_variable);
+            L_SKIP();
+            PushVector(&tree, parse_expr1(lex));
+            CHECK(AST_BACK(&tree)->kind != ast_invalid);
+            break;
+        }
+
         default:
             goto end;
         }
@@ -279,7 +284,79 @@ AST *parse_expr(lexer *lex, operation o, int commas) {
 }
 
 AST *parse_expr1(lexer *lex) {
-    AST *     ast  = parse_primary_expr(lex);
-    operation none = {.kind = op_none, .prec = prec_none};
-    return parse_rest_expr(lex, ast, /*operation*/ none, /*commas*/ 0);
+    AST *ast = parse_primary_expr(lex);
+    return parse_rest_expr(lex, ast, (operation){0}, /*commas*/ 0);
+}
+
+static AST *parse_let_statement(lexer *lex) {
+    L_SKIP(); /* skip 'let' */
+
+    const char *begin = L_PEEK().loc.begin;
+
+    if (L_PEEK().type == tk_identifier) {
+        AST *lhs = make_ast(ast_variable);
+        lhs->loc = L_PEEK().loc;
+        L_SKIP();
+
+        AST *rhs = parse_rest_expr(lex, lhs, (operation){0}, /*commas*/ 0);
+
+        AST *declaration = make_ast(ast_declaration);
+        declaration->loc = new_loc(begin, rhs->loc.end);
+        PushVector(&declaration->children, rhs);
+
+        /* push into current scope variable declarations */
+        AST *scope = (AST *)BackVector(&lex->scope);
+        PushVector(&scope->var_declarations, declaration);
+
+        L_SKIP_CHECKED(tk_semicolon);
+        return declaration;
+    }
+
+    CHECK_NOT_REACHED();
+}
+
+static AST *parse_statement(lexer *lex) {
+    switch (L_PEEK().type) {
+
+    case tk_identifier: {
+        AST *identifier = make_ast(ast_variable);
+        identifier->loc = L_PEEK().loc;
+        L_SKIP();
+        L_SKIP_CHECKED(tk_semicolon);
+        return identifier;
+    }
+
+    case tk_let: {
+        AST *let_statement = parse_let_statement(lex);
+        return let_statement;
+    }
+
+    default:
+        return invalid_ast();
+    }
+}
+
+AST *parse_program(lexer *lex) {
+    AST *module = make_ast(ast_module);
+    lex->scope  = NewVector();
+    PushVector(&lex->scope, module); /* push global scope for declaring
+                                      * variables and functions */
+    while (1) {
+        AST *statement = parse_statement(lex);
+        if (statement->kind != ast_invalid) {
+            PushVector(&module->children, statement);
+        }
+        switch (L_PEEK().type) {
+        case tk_eof:
+            goto end;
+
+            /* we may want to check if there something else trailling  */
+
+        default:
+            CHECK_NOT_REACHED();
+        }
+    }
+end:
+    PopVector(&lex->scope);
+    return module;
 }

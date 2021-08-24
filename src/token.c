@@ -95,12 +95,12 @@ finish:
     } else {                                                                   \
         free(identifier_name);                                                 \
     }
-    ENUMERATE_NAMED_TOKENS(COMPARE)
+    ENUMERATE_KEYWORDS(COMPARE)
     ENUMERATE_FUNCTIONS(COMPARE)
     ENUMERATE_CONSTANTS(COMPARE)
 #undef COMPARE
 
-    return (token) {.type = tk_identifier, .loc = loc};
+    return (token){.type = tk_identifier, .loc = loc};
 }
 
 static void skip_whitespace(stream *s) {
@@ -148,6 +148,9 @@ static token next_token(stream *s) {
 
     case ',':
         return parse_singlechar_token(s, tk_comma);
+
+    case ';':
+        return parse_singlechar_token(s, tk_semicolon);
 
     case '\0':
         return (token){.type = tk_eof};

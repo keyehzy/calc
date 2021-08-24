@@ -119,30 +119,30 @@ TEST(test_token, token_simple) {
     }
 
     {
-      lexer lex  = new_lexer("=");
-      token t    = lex.last_token_;
-      char *name = NULL;
-      EXPECT_EQ(t.type, tk_equal);
-      EXPECT_STREQ((name = normalized_name(t.loc)), "=");
-      free(name);
+        lexer lex  = new_lexer("=");
+        token t    = lex.last_token_;
+        char *name = NULL;
+        EXPECT_EQ(t.type, tk_equal);
+        EXPECT_STREQ((name = normalized_name(t.loc)), "=");
+        free(name);
     }
 
     {
-      lexer lex  = new_lexer("foo");
-      token t    = lex.last_token_;
-      char *name = NULL;
-      EXPECT_EQ(t.type, tk_identifier);
-      EXPECT_STREQ((name = normalized_name(t.loc)), "foo");
-      free(name);
+        lexer lex  = new_lexer("foo");
+        token t    = lex.last_token_;
+        char *name = NULL;
+        EXPECT_EQ(t.type, tk_identifier);
+        EXPECT_STREQ((name = normalized_name(t.loc)), "foo");
+        free(name);
     }
 
     {
-      lexer lex  = new_lexer("let");
-      token t    = lex.last_token_;
-      char *name = NULL;
-      EXPECT_EQ(t.type, tk_let);
-      EXPECT_STREQ((name = normalized_name(t.loc)), "let");
-      free(name);
+        lexer lex  = new_lexer("let");
+        token t    = lex.last_token_;
+        char *name = NULL;
+        EXPECT_EQ(t.type, tk_let);
+        EXPECT_STREQ((name = normalized_name(t.loc)), "let");
+        free(name);
     }
 
 #define TEST_TOKEN_FUNCS(func)                                                 \

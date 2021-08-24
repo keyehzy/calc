@@ -2,8 +2,12 @@
 
 #include <calc/codeloc.h>
 #include <calc/stream.h>
+#include <calc/vector.h>
 
 #define L_SKIP() skip(lex)
+#define L_SKIP_CHECKED(x)                                                      \
+    CHECK(L_PEEK().type == (x));                                               \
+    skip(lex)
 #define L_PEEK() peek(lex)
 
 #define ENUMERATE_NUMBERS(O)                                                   \
@@ -90,8 +94,7 @@
     O(pi)                                                                      \
     O(e)
 
-#define ENUMERATE_NAMED_TOKENS(O)               \
-    O(let)
+#define ENUMERATE_KEYWORDS(O) O(let)
 
 #define CASE(num) case num:
 
@@ -115,6 +118,7 @@ typedef enum {
     tk_left_curly,
     tk_right_curly,
     tk_comma,
+    tk_semicolon,
 
 #define TOKEN_TYPE_ENUM(func) tk_##func,
     ENUMERATE_FUNCTIONS(TOKEN_TYPE_ENUM) ENUMERATE_CONSTANTS(TOKEN_TYPE_ENUM)
@@ -130,6 +134,7 @@ typedef struct {
 typedef struct lexer {
     stream s;
     token  last_token_;
+    vector scope;
 } lexer;
 
 token peek(struct lexer *);

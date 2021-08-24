@@ -10,6 +10,14 @@
 
 typedef enum {
     ast_invalid,
+
+    /* statements */
+    ast_declaration,
+    ast_block,
+    ast_module,
+
+    /* expressions */
+    ast_variable,
     ast_binary_expr,
     ast_unary_expr,
     ast_number_literal,
@@ -66,12 +74,13 @@ typedef struct ast {
     codeloc   loc;
     operation op;
     vector    children;
-    /* struct ast *left; */
-    /* struct ast *right; */
+    vector    fn_declarations;
+    vector    var_declarations;
 } AST;
 
 AST *parse_expr(lexer *, operation, int);
 AST *parse_expr1(lexer *);
+AST *parse_program(lexer *);
 AST *child_0(AST *);
 AST *child_1(AST *);
 AST *child(AST *, int);
