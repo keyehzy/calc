@@ -1,7 +1,6 @@
 #pragma once
 
 #include <calc/codeloc.h>
-#include <calc/stream.h>
 #include <calc/vector.h>
 
 #define L_SKIP() skip(lex)
@@ -132,7 +131,7 @@ typedef struct {
 } token;
 
 typedef struct lexer {
-    stream s;
+    const char *buffer_;
     token  last_token_;
     vector scope;
 } lexer;

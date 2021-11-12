@@ -2,7 +2,6 @@
 
 extern "C" {
 #include <calc/ast.h>
-#include <calc/stream.h>
 }
 
 TEST(test_ast, test_statements) {

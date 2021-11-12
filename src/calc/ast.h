@@ -1,7 +1,6 @@
 #pragma once
 
 #include <calc/codeloc.h>
-#include <calc/stream.h>
 #include <calc/token.h>
 #include <calc/vector.h>
 

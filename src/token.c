@@ -1,28 +1,37 @@
 #include <calc/assert.h>
-#include <calc/stream.h>
 #include <calc/token.h>
+
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-static token parse_number(stream *);
+static token parse_number(lexer *);
 
-static token parse_identifier(stream *);
+static token parse_identifier(lexer *);
 
-static token next_token(stream *);
+static token next_token(lexer *);
 
-static void skip_whitespace(stream *);
+static void skip_whitespace(lexer *);
 
-static token parse_singlechar_token(stream *, token_type);
+static token parse_singlechar_token(lexer *, token_type);
 
 token peek(lexer *self) { return self->last_token_; }
 
-void skip(lexer *self) { self->last_token_ = next_token(&self->s); }
+void skip(lexer *self) { self->last_token_ = next_token(self); }
 
 lexer new_lexer(const char *buffer) {
-    lexer lex;
-    lex.s           = new_stream(buffer);
-    lex.last_token_ = next_token(&lex.s);
+    lexer lex = {0};
+    lex.buffer_ = buffer;
+    lex.last_token_ = next_token(&lex);
     return lex;
+}
+
+static void s_skip(lexer *lex) {
+  lex->buffer_ += 1;
+}
+
+static const char* s_peek(lexer *lex) {
+  return lex->buffer_;
 }
 
 static const char *parse_decimal(const char *beg) {
@@ -38,8 +47,8 @@ static const char *parse_decimal(const char *beg) {
     }
 }
 
-static token parse_number(stream *s) {
-    const char *begin = S_PEEK(s);
+static token parse_number(lexer *lex) {
+    const char *begin = s_peek(lex);
     const char *it    = begin;
     const char *end;
 
@@ -60,13 +69,13 @@ static token parse_number(stream *s) {
 
 finish:
     end         = it;
-    s->buffer   = end;
+    lex->buffer_   = end;
     codeloc loc = (codeloc){.begin = begin, .end = end};
     return (token){.type = tk_number, .loc = loc};
 }
 
-static token parse_identifier(stream *s) {
-    const char *begin = S_PEEK(s);
+static token parse_identifier(lexer *lex) {
+    const char *begin = s_peek(lex);
     const char *it    = begin;
     const char *end;
 
@@ -83,7 +92,7 @@ static token parse_identifier(stream *s) {
 
 finish:
     end       = it;
-    s->buffer = end;
+    lex->buffer_ = end;
 
     char *  identifier_name = NULL;
     codeloc loc             = (codeloc){.begin = begin, .end = end};
@@ -103,54 +112,54 @@ finish:
     return (token){.type = tk_identifier, .loc = loc};
 }
 
-static void skip_whitespace(stream *s) {
-    const char *input = S_PEEK(s);
+static void skip_whitespace(lexer *lex) {
+    const char *input = s_peek(lex);
     while (input[0] == ' ' || input[0] == '\t' || input[0] == '\f' ||
            input[0] == '\v' || input[0] == '\n' || input[0] == '\r') {
         input += 1;
     }
-    s->buffer = input;
+    lex->buffer_ = input;
 }
 
-static token parse_singlechar_token(stream *s, token_type type) {
-    const char *pos = S_PEEK(s);
+static token parse_singlechar_token(lexer *lex, token_type type) {
+    const char *pos = s_peek(lex);
     codeloc     loc = (codeloc){.begin = pos, .end = pos + 1};
-    S_SKIP(s);
+    s_skip(lex);
     return (token){.type = type, .loc = loc};
 }
 
-static token next_token(stream *s) {
-    skip_whitespace(s);
-    switch (S_PEEK(s)[0]) {
+static token next_token(lexer *lex) {
+    skip_whitespace(lex);
+    switch (s_peek(lex)[0]) {
         CASE_NUMBERS
-        return parse_number(s);
+        return parse_number(lex);
 
         CASE_CHARACTERS
-        return parse_identifier(s);
+        return parse_identifier(lex);
 
         CASE_OPERATORS /* TODO handle multiple character operators */
-            return parse_singlechar_token(s, tk_operator);
+            return parse_singlechar_token(lex, tk_operator);
 
     case '=':
-        return parse_singlechar_token(s, tk_equal);
+        return parse_singlechar_token(lex, tk_equal);
 
     case '(':
-        return parse_singlechar_token(s, tk_left_paren);
+        return parse_singlechar_token(lex, tk_left_paren);
 
     case ')':
-        return parse_singlechar_token(s, tk_right_paren);
+        return parse_singlechar_token(lex, tk_right_paren);
 
     case '{':
-        return parse_singlechar_token(s, tk_left_curly);
+        return parse_singlechar_token(lex, tk_left_curly);
 
     case '}':
-        return parse_singlechar_token(s, tk_right_curly);
+        return parse_singlechar_token(lex, tk_right_curly);
 
     case ',':
-        return parse_singlechar_token(s, tk_comma);
+        return parse_singlechar_token(lex, tk_comma);
 
     case ';':
-        return parse_singlechar_token(s, tk_semicolon);
+        return parse_singlechar_token(lex, tk_semicolon);
 
     case '\0':
         return (token){.type = tk_eof};

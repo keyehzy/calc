@@ -13,13 +13,11 @@ add_library(
   calc/ast.h
   calc/codeloc.h
   calc/eval.h
-  calc/stream.h
   calc/token.h
   calc/vector.h
   ast.c
   codeloc.c
   eval.c
-  stream.c
   token.c
   vector.c
 )

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-#include <calc/stream.h>
 #include <calc/token.h>
 }
 
