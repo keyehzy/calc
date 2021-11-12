@@ -165,7 +165,9 @@ static token next_token(lexer *lex) {
         return (token){.type = tk_eof};
 
     default:
+        emit_error(error_unexpected_token,
+               new_loc(s_peek(lex), s_peek(lex) + 1));
         break;
     }
-    CHECK_NOT_REACHED();
+    return (token) {.type = tk_invalid };
 }

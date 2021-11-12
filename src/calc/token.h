@@ -2,11 +2,15 @@
 
 #include <calc/codeloc.h>
 #include <calc/vector.h>
+#include <calc/assert.h>
 
 #define L_SKIP() skip(lex)
-#define L_SKIP_CHECKED(x)                                                      \
-    CHECK(L_PEEK().type == (x));                                               \
-    skip(lex)
+#define L_SKIP_CHECKED(x)                                               \
+  if(L_PEEK().type != (x)) {                                            \
+    emit_error(error_missing_expected_token, L_PEEK().loc);             \
+  } else {                                                              \
+    skip(lex);                                                          \
+  }
 #define L_PEEK() peek(lex)
 
 #define ENUMERATE_NUMBERS(O)                                                   \
@@ -106,6 +110,7 @@
 #define CASE_OPERATORS ENUMERATE_OPERATORS(CASE)
 
 typedef enum {
+    tk_invalid,
     tk_eof,
     tk_equal,
     tk_identifier,

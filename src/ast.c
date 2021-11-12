@@ -20,6 +20,7 @@ AST *child_0(AST *ast) {
     CHECK(Size(&ast->children) > 0);
     return GetVector(&ast->children, 0);
 }
+
 AST *child_1(AST *ast) {
     CHECK(Size(&ast->children) > 1);
     return GetVector(&ast->children, 1);
@@ -41,12 +42,14 @@ void free_ast(AST *ast) { /* FIXME */
 
 static AST *new_empty_ast() {
     AST *ast      = (AST *)malloc(sizeof(AST));
+    *ast = (AST) {0};
     ast->children = NewVector();
     return ast;
 }
 
 static AST *make_ast(ast_kind kind) {
     AST *ast              = (AST *)malloc(sizeof(AST));
+    *ast = (AST) {0};
     ast->kind             = kind;
     ast->children         = NewVector();
     ast->var_declarations = NewVector();
@@ -56,6 +59,7 @@ static AST *make_ast(ast_kind kind) {
 
 static AST *new_ast(ast_kind kind, codeloc loc, operation op) {
     AST *ast      = (AST *)malloc(sizeof(AST));
+    *ast = (AST) {0};
     ast->kind     = kind;
     ast->loc      = loc;
     ast->op       = op;
@@ -65,13 +69,14 @@ static AST *new_ast(ast_kind kind, codeloc loc, operation op) {
 
 static AST *invalid_ast() {
     AST *ast  = (AST *)malloc(sizeof(AST));
+    *ast = (AST) {0};
     ast->kind = ast_invalid;
     return ast;
 }
 
 static operation operation_from_tk(token t, int context) {
     char *    name = normalized_name(t.loc);
-    operation op;
+    operation op = (operation) {0};
     if (context == 0) { /* binary operations */
         switch (name[0]) {
         case '+':
@@ -105,7 +110,8 @@ static operation operation_from_tk(token t, int context) {
             break;
 
         default:
-            CHECK_NOT_REACHED();
+            emit_error(error_unexpected_operation, t.loc);  /* error */
+            break;
         }
     } else { /* unary operation */
         switch (name[0]) {
@@ -119,7 +125,8 @@ static operation operation_from_tk(token t, int context) {
                              .assoc = assoc_left};
             break;
         default:
-            CHECK_NOT_REACHED();
+            emit_error(error_unexpected_operation, t.loc);  /* error */
+            break;
         }
     }
 
@@ -199,7 +206,6 @@ static AST *parse_primary_expr(lexer *lex) {
     default:
         return invalid_ast();
     }
-    CHECK_NOT_REACHED();
 }
 
 static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
@@ -291,7 +297,6 @@ static void combine_tree(vector *tree, operation o) {
     } else if (Size(tree) == 1) {
         return;
     }
-    CHECK_NOT_REACHED();
 }
 
 AST *parse_expr(lexer *lex, operation o, int commas) {
@@ -329,8 +334,8 @@ static AST *parse_let_statement(lexer *lex) {
         L_SKIP_CHECKED(tk_semicolon);
         return declaration;
     }
-
-    CHECK_NOT_REACHED();
+    emit_error(error_unexpected_token_after_let, L_PEEK().loc);
+    return invalid_ast();
 }
 
 static AST *parse_statement(lexer *lex) {
@@ -381,7 +386,8 @@ AST *parse_program(lexer *lex) {
                 break;
 
             default:
-                CHECK_NOT_REACHED();
+                emit_error(error_malformed_expression, statement->loc);
+                break;
             }
         }
     }

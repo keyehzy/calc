@@ -1,8 +1,10 @@
 #include <calc/eval.h>
+
 #include <getopt.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <stdlib.h>
 
 void rec_eval(ReturnExpr ret, int nested) {
     switch (ret.type) {

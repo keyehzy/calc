@@ -15,6 +15,7 @@ add_library(
   calc/eval.h
   calc/token.h
   calc/vector.h
+  assert.c
   ast.c
   codeloc.c
   eval.c
