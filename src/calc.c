@@ -5,35 +5,45 @@
 #include <stdio.h>
 #include <editline/readline.h>
 
-void rec_eval(ReturnExpr ret, int nested) {
-    switch (ret.type) {
+void rec_eval(ReturnExpr ret, int nested, int last) {
+  switch (ret.type) {
     case Real:
-        if (nested) {
-            printf(" %.9lf ", ret.double_val);
+      if (nested) {
+        if(last) {
+          printf(" %.9lf ", ret.double_val);
         } else {
-            printf("%.9lf\n", ret.double_val);
+          printf(" %.9lf, ", ret.double_val);
         }
-        break;
-   case Complex: {
-        if (nested) {
+      } else {
+        printf("%.9lf", ret.double_val);
+      }
+      break;
+    case Complex: {
+      if (nested) {
+        if(last) {
           printf(" %.9lf + %.9lfi ", creal(ret.complex_val), cimag(ret.complex_val));
         } else {
-            printf("%.9lf + %.9lfi\n", creal(ret.complex_val), cimag(ret.complex_val));
+          printf(" %.9lf + %.9lfi, ", creal(ret.complex_val), cimag(ret.complex_val));
         }
-        break;
-   }
+      } else {
+        printf("%.9lf + %.9lfi", creal(ret.complex_val), cimag(ret.complex_val));
+      }
+      break;
+    }
     case List:
-        printf("{");
-        for (int i = 0; i < Size(&ret.list_val); i++) {
-            rec_eval(*((ReturnExpr *)GetVector(&ret.list_val, i)),
-                     /*nested*/ 1);
-        }
-        printf("}");
-        break;
-    }
-    if(nested == 0) {
-      printf("\n");
-    }
+      printf("{");
+      int size = Size(&ret.list_val);
+      for (int i = 0; i < size; i++) {
+        int last = i == size-1;
+        rec_eval(*((ReturnExpr *)GetVector(&ret.list_val, i)),
+                 /*nested*/ 1, last);
+      }
+      printf("}");
+      break;
+  }
+  if(nested == 0) {
+    printf("\n");
+  }
 }
 
 int repl() {
@@ -41,7 +51,7 @@ int repl() {
     while ((buffer = readline("> "))) {
         if (buffer && *buffer) {
             ReturnExpr ret = evaluate(buffer);
-            rec_eval(ret, /*nested*/ 0);
+            rec_eval(ret, /*nested*/ 0, /*last*/ 0);
             add_history(buffer);
         }
         free(buffer);
@@ -59,7 +69,7 @@ int main(int argc, char **argv) {
         if (c == 'e') {
             if (optarg && *optarg) {
                 ReturnExpr ret = evaluate(optarg);
-                rec_eval(ret, /*nested*/ 0);
+                rec_eval(ret, /*nested*/ 0, /*last*/ 0);
             }
         }
 
