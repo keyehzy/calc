@@ -1,6 +1,2 @@
-BasedOnStyle: llvm
-IndentWidth: 4
+BasedOnStyle: Google
 SortIncludes: true
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
-ReflowComments: true
