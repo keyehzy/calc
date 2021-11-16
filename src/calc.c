@@ -1,4 +1,4 @@
-#include <calc/eval.h>
+#include <calc/ast.h>
 
 #include <getopt.h>
 #include <stdlib.h>

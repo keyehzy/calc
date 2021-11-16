@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-#include <calc/eval.h>
+#include <calc/ast.h>
 }
 
 double evaluate_to_number(const char *expr) {

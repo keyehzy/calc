@@ -78,6 +78,16 @@ typedef struct ast {
     vector    var_declarations;
 } AST;
 
+typedef struct {
+    enum { Number, List } type;
+    union {
+        double double_val;
+        vector list_val;
+    } value;
+} ReturnExpr;
+
+ReturnExpr evaluate(const char *);
+
 AST *parse_expr(lexer *, operation, int);
 AST *parse_expr1(lexer *);
 AST *parse_program(lexer *);

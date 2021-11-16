@@ -1,7 +1,6 @@
 #include <calc/codeloc.h>
 #include <calc/assert.h>
 #include <calc/ast.h>
-#include <calc/eval.h>
 
 #include <math.h>
 #include <stdio.h>
