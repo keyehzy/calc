@@ -2,8 +2,230 @@
 #include <calc/ast.h>
 #include <calc/token.h>
 #include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
 
 #include "calc/vector.h"
+
+void evaluate_ast(AST* ast);
+
+static value operate_binary_on_list_element(value a, value b,
+                                            value (*func)(value, value)) {
+  int N = Size(&a.list_val);
+  CHECK(N == Size(&b.list_val));
+  vector list = NewVector();
+  for (int i = 0; i < N; i++) {
+    value *s1 = (value *)malloc(sizeof(value));
+    value *r1 = GetVector(&a.list_val, i);
+    value *r2 = GetVector(&b.list_val, i);
+    *s1 = func(*r1, *r2);
+    PushVector(&list, s1);
+  }
+  return (value) {.type = List, .list_val = list};
+}
+
+static value operate_unary_on_list_element(value a, value (*func)(value)) {
+  int N = Size(&a.list_val);
+  vector list = NewVector();
+  for (int i = 0; i < N; i++) {
+    value *s1 = (value *)malloc(sizeof(value));
+    value *r1 = GetVector(&a.list_val, i);
+    *s1 = func(*r1);
+    PushVector(&list, s1);
+  }
+  return (value) {.type = List, .list_val = list};
+}
+
+
+static value sum(value a, value b) {
+  if (a.type == Real && b.type == Real) {
+    return (value) {.type = Real, .double_val = a.double_val + b.double_val};
+  } else if (a.type == Real && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.double_val + b.complex_val};
+  } else if (a.type == Complex && b.type == Real) {
+    return (value) {.type = Complex, .complex_val = a.complex_val + b.double_val};
+  } else if (a.type == Complex && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.complex_val + b.complex_val};
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, sum);
+  }
+  else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+static value sub(value a, value b) {
+  if (a.type == Real && b.type == Real) {
+    return (value) {.type = Real, .double_val = a.double_val - b.double_val};
+  } else if (a.type == Real && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.double_val - b.complex_val};
+  } else if (a.type == Complex && b.type == Real) {
+    return (value) {.type = Complex, .complex_val = a.complex_val - b.double_val};
+  } else if (a.type == Complex && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.complex_val - b.complex_val};
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, sub);
+  }
+  else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+static value mul(value a, value b) {
+  if (a.type == Real && b.type == Real) {
+    return (value) {.type = Real, .double_val = a.double_val * b.double_val};
+  } else if (a.type == Real && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.double_val * b.complex_val};
+  } else if (a.type == Complex && b.type == Real) {
+    return (value) {.type = Complex, .complex_val = a.complex_val * b.double_val};
+  } else if (a.type == Complex && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.complex_val * b.complex_val};
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, mul);
+  }
+  else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+static value divide(value a, value b) {
+  if (a.type == Real && b.type == Real) {
+    return (value) {.type = Real, .double_val = a.double_val / b.double_val};
+  } else if (a.type == Real && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.double_val / b.complex_val};
+  } else if (a.type == Complex && b.type == Real) {
+    return (value) {.type = Complex, .complex_val = a.complex_val / b.double_val};
+  } else if (a.type == Complex && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = a.complex_val / b.complex_val};
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, divide);
+  }
+  else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+static value negate(value a) {
+  if (a.type == Real) {
+    return (value){.type = Real, .double_val = -a.double_val};
+  } else if (a.type == Complex) {
+    return (value){.type = Complex, .complex_val = -a.complex_val};
+  } else if (a.type == List) {
+    return operate_unary_on_list_element(a, negate);
+  }
+  else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+static value exponentiate(value a, value b) {
+  if (a.type == Real && b.type == Real) {
+    return (value) {.type = Real, .double_val = pow(a.double_val, b.double_val)};
+  } else if (a.type == Real && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = cpow(a.double_val, b.complex_val)};
+  } else if (a.type == Complex && b.type == Real) {
+    return (value) {.type = Complex, .complex_val = cpow(a.complex_val, b.double_val)};
+  } else if (a.type == Complex && b.type == Complex) {
+    return (value) {.type = Complex, .complex_val = cpow(a.complex_val, b.complex_val)};
+  } else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+#define CASE_BUILTIN_FUNCS(funcs)                                              \
+  static value fn_##funcs(value a) {                                           \
+    if (a.type == Real) {                                                      \
+      return (value){.type = Real, .double_val = funcs(a.double_val)};         \
+    } else if (a.type == Complex) {                                            \
+      return (value){.type = Complex, .complex_val = c##funcs(a.complex_val)}; \
+    } else if (a.type == List) {                                               \
+      return operate_unary_on_list_element(a, fn_##funcs);                     \
+    } else {                                                                   \
+      CHECK_NOT_REACHED();                                                     \
+    }                                                                          \
+  }
+ENUMERATE_FUNCTIONS(CASE_BUILTIN_FUNCS)
+#undef CASE_BUILTIN_FUNCS
+
+void eval_number_literal(AST *ast) {
+  char *name = normalized_name(ast->loc);
+  char *endptr = NULL;
+  double number = strtod(name, &endptr);
+  if (endptr[0] == 'i') {
+    ast->val = (value){.type = Complex, .complex_val = number * I};
+  } else {
+    ast->val = (value){.type = Real, .double_val = number};
+  }
+  free(name);
+}
+
+void eval_binary_expr(AST *ast) {
+  switch (ast->op.kind) {
+    case op_binary_plus:
+      ast->val = sum(child_0(ast)->val, child_1(ast)->val);
+      break;
+    case op_binary_minus:
+      ast->val = sub(child_0(ast)->val, child_1(ast)->val);
+      break;
+    case op_binary_times:
+      ast->val = mul(child_0(ast)->val, child_1(ast)->val);
+      break;
+    case op_binary_div:
+      ast->val = divide(child_0(ast)->val, child_1(ast)->val);
+      break;
+    case op_binary_pow:
+      ast->val = exponentiate(child_0(ast)->val, child_1(ast)->val);
+      break;
+    default:
+      CHECK_NOT_REACHED();
+  }
+}
+
+void eval_unary_expr(AST *ast) {
+  switch (ast->op.kind) {
+    case op_unary_plus:
+      ast->val = child_0(ast)->val;
+      break;
+
+    case op_unary_minus:
+      ast->val = negate(child_0(ast)->val);
+      break;
+
+#define CASE_EVAL_FUNCS(funcs)                \
+  case op_##funcs:                            \
+    ast->val = fn_##funcs(child_0(ast)->val); \
+    break;
+      ENUMERATE_FUNCTIONS(CASE_EVAL_FUNCS)
+#undef CASE_EVAL_FUNCS
+
+    default:
+      CHECK_NOT_REACHED();
+  }
+}
+
+void eval_paren_expr(AST* ast) {
+  ast->val = child_0(ast)->val;
+}
+
+void eval_curly_expr(AST *ast) {
+  vector list_elements = NewVector();
+  if (child_0(ast)->kind == ast_comma_expr) {
+    for (int i = 0; i < Size(&child_0(ast)->children); i++) {
+      value *elem = malloc(sizeof(value));
+      *elem = child(child_0(ast), i)->val; /* bad code i think */
+      PushVector(&list_elements, elem);
+    }
+  } else {
+    value *elem = malloc(sizeof(value));
+    *elem = child_0(ast)->val; /* bad code i think */
+    PushVector(&list_elements, elem);
+  }
+  ast->val = (value){.type = List, .list_val = list_elements};
+}
+
+static value const_pi() { return (value) {.type = Real, .double_val = M_PI}; }
+
+static value const_e() { return (value) {.type = Real, .double_val = M_E}; }
 
 static AST *new_empty_ast();
 
@@ -136,13 +358,16 @@ static AST *parse_primary_expr(lexer *lex) {
     case tk_identifier: {
       codeloc identifier_span = L_PEEK().loc;
       L_SKIP();
-      return new_ast(ast_variable, identifier_span, (operation){0});
+      AST *identifier = new_ast(ast_variable, identifier_span, (operation){0});
+      return identifier;
     }
 
     case tk_number: {
       codeloc number_span = L_PEEK().loc;
       L_SKIP();
-      return new_ast(ast_number_literal, number_span, (operation){0});
+      AST *number_ast = new_ast(ast_number_literal, number_span, (operation){0});
+      eval_number_literal(number_ast);
+      return number_ast;
     }
 
     case tk_left_paren: {
@@ -153,6 +378,7 @@ static AST *parse_primary_expr(lexer *lex) {
       AST *ast = new_ast(ast_paren_expr, paren_expr->loc,
                          (operation){.prec = prec_paren});
       PushVector(&ast->children, paren_expr);
+      eval_paren_expr(ast);
       return ast;
     }
 
@@ -164,6 +390,7 @@ static AST *parse_primary_expr(lexer *lex) {
       AST *ast = new_ast(ast_curly_expr, curly_expr->loc,
                          (operation){.prec = prec_paren});
       PushVector(&ast->children, curly_expr);
+      eval_curly_expr(ast);
       return ast;
     }
 
@@ -173,14 +400,17 @@ static AST *parse_primary_expr(lexer *lex) {
       L_SKIP();
       AST *ast = new_ast(ast_unary_expr, operator_span, op);
       PushVector(&ast->children, parse_primary_expr(lex));
+      eval_unary_expr(ast);
       return ast;
     }
 
-#define PARSE_CONST(constant)                                         \
-  case tk_##constant: {                                               \
-    codeloc const_span = L_PEEK().loc;                                \
-    L_SKIP();                                                         \
-    return new_ast(ast_const_##constant, const_span, (operation){0}); \
+#define PARSE_CONST(constant)                                           \
+  case tk_##constant: {                                                 \
+    codeloc const_span = L_PEEK().loc;                                  \
+    L_SKIP();                                                           \
+    AST *c = new_ast(ast_const_##constant, const_span, (operation){0}); \
+    c->val = const_##constant();                                        \
+    return c;                                                           \
   }
       ENUMERATE_CONSTANTS(PARSE_CONST);
 #undef PARSE_CONST
@@ -194,6 +424,7 @@ static AST *parse_primary_expr(lexer *lex) {
     CHECK(L_PEEK().type == tk_left_paren);                                     \
     AST *ast = new_ast(ast_unary_expr, operator_span, op);                     \
     PushVector(&ast->children, parse_primary_expr(lex));                       \
+    eval_unary_expr(ast);                                                      \
     return ast;                                                                \
   }
       ENUMERATE_FUNCTIONS(PARSE_FUNC);
@@ -270,6 +501,7 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
     }
 
     combine_tree(&tree, new_o);
+    eval_binary_expr(AST_BACK(&tree));
   }
 end:
   combine_tree(&tree, new_o);
@@ -291,6 +523,7 @@ static void combine_tree(vector *tree, operation o) {
     ast->loc = new_loc(AST_GET(tree, 0)->loc.begin, AST_BACK(tree)->loc.end);
 
     int SIZE = Size(tree);
+    /* TODO: I think we can merge these two for loops */
     for (int i = 0; i < SIZE; i++) {
       PushVector(&ast->children, GetVector(tree, i));
     }
@@ -396,5 +629,6 @@ AST *parse_program(lexer *lex) {
   }
 end:
   PopVector(&lex->scope);
+  module->val = AST_BACK(&module->children)->val;
   return module;
 }

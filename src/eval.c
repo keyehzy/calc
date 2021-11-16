@@ -22,20 +22,6 @@ typedef struct {
   vector scope;
 } evaluator;
 
-static evaluator NewEvaluator() {
-  evaluator ev;
-  ev.scope = NewVector();
-  return ev;
-}
-
-static void push_scope(evaluator *ev, AST *scope) {
-  PushVector(&ev->scope, scope);
-}
-
-static void pop_scope(evaluator *ev) { PopVector(&ev->scope); }
-
-static AST *get_scope(evaluator *ev) { return AST_BACK(&ev->scope); }
-
 /* Variables */
 
 static int compare_variable(AST *a, AST *b) {
@@ -199,16 +185,16 @@ static value const_pi() { return NewNumber(M_PI); }
 
 static value const_e() { return NewNumber(M_E); }
 
-value evaluate_ast(AST *ast, evaluator *ev) {
+value evaluate_ast(AST *ast) {
   switch (ast->kind) {
     case ast_variable: {
-      vector var_decl = get_scope(ev)->var_declarations;
+      vector var_decl = ast->var_declarations;
       for (int i = 0; i < Size(&var_decl); i++) {
         AST *decl = GetVector(&var_decl, i);
         AST *assign = child_0(decl);
 
         if (compare_variable(ast, child_0(assign)) == 0) {
-          return evaluate_ast(child_1(assign), ev);
+          return evaluate_ast(child_1(assign));
         }
       }
       emit_error(error_use_of_undeclared_variable, ast->loc);
@@ -217,18 +203,16 @@ value evaluate_ast(AST *ast, evaluator *ev) {
 
     case ast_declaration: {
       AST *assign = child_0(ast);
-      return evaluate_ast(child_1(assign), ev);
+      return evaluate_ast(child_1(assign));
     }
 
     case ast_module: {
-      push_scope(ev, ast);
       vector statements = NewVector();
       for (int i = 0; i < Size(&ast->children); i++) {
         value *elem = malloc(sizeof(value));
-        *elem = evaluate_ast(GetVector(&ast->children, i), ev);
+        *elem = evaluate_ast(GetVector(&ast->children, i));
         PushVector(&statements, elem);
       }
-      pop_scope(ev);
       return *((value *)BackVector(&statements)); /* module returns
                                                    * result of last
                                                    * expression */
@@ -240,19 +224,19 @@ value evaluate_ast(AST *ast, evaluator *ev) {
         for (int i = 0; i < Size(&child_0(ast)->children); i++) {
           value *elem = malloc(sizeof(value));
           *elem =
-              evaluate_ast(child(child_0(ast), i), ev); /* bad code i think */
+              evaluate_ast(child(child_0(ast), i)); /* bad code i think */
           PushVector(&list_elements, elem);
         }
       } else {
         value *elem = malloc(sizeof(value));
-        *elem = evaluate_ast(child_0(ast), ev); /* bad code i think */
+        *elem = evaluate_ast(child_0(ast)); /* bad code i think */
         PushVector(&list_elements, elem);
       }
       return NewList(list_elements);
     }
 
     case ast_paren_expr:
-      return evaluate_ast(child_0(ast), ev);
+      return evaluate_ast(child_0(ast));
 
     case ast_number_literal: {
       char *name = normalized_name(ast->loc);
@@ -269,14 +253,14 @@ value evaluate_ast(AST *ast, evaluator *ev) {
     case ast_unary_expr: {
       switch (ast->op.kind) {
         case op_unary_plus:
-          return evaluate_ast(child_0(ast), ev);
+          return evaluate_ast(child_0(ast));
 
         case op_unary_minus:
-          return negate(evaluate_ast(child_0(ast), ev));
+          return negate(evaluate_ast(child_0(ast)));
 
 #define CASE_EVAL_FUNCS(funcs) \
   case op_##funcs:             \
-    return fn_##funcs(evaluate_ast(child_0(ast), ev));
+    return fn_##funcs(evaluate_ast(child_0(ast)));
           ENUMERATE_FUNCTIONS(CASE_EVAL_FUNCS)
 #undef CASE_EVAL_FUNCS
 
@@ -289,20 +273,20 @@ value evaluate_ast(AST *ast, evaluator *ev) {
     case ast_binary_expr: {
       switch (ast->op.kind) {
         case op_binary_plus:
-          return sum(evaluate_ast(child_0(ast), ev),
-                     evaluate_ast(child_1(ast), ev));
+          return sum(evaluate_ast(child_0(ast)),
+                     evaluate_ast(child_1(ast)));
         case op_binary_minus:
-          return sub(evaluate_ast(child_0(ast), ev),
-                     evaluate_ast(child_1(ast), ev));
+          return sub(evaluate_ast(child_0(ast)),
+                     evaluate_ast(child_1(ast)));
         case op_binary_times:
-          return mul(evaluate_ast(child_0(ast), ev),
-                     evaluate_ast(child_1(ast), ev));
+          return mul(evaluate_ast(child_0(ast)),
+                     evaluate_ast(child_1(ast)));
         case op_binary_div:
-          return divide(evaluate_ast(child_0(ast), ev),
-                        evaluate_ast(child_1(ast), ev));
+          return divide(evaluate_ast(child_0(ast)),
+                        evaluate_ast(child_1(ast)));
         case op_binary_pow:
-          return exponentiate(evaluate_ast(child_0(ast), ev),
-                              evaluate_ast(child_1(ast), ev));
+          return exponentiate(evaluate_ast(child_0(ast)),
+                              evaluate_ast(child_1(ast)));
         default:
           CHECK_NOT_REACHED();
       }
@@ -324,8 +308,7 @@ value evaluate_ast(AST *ast, evaluator *ev) {
 value evaluate(const char *input) {
   lexer lex = new_lexer(input);
   AST *ast = parse_program(&lex);
-  evaluator ev = NewEvaluator();
-  value value = evaluate_ast(ast, &ev);
-  free_ast(ast);
-  return value;
+  /* value value = evaluate_ast(ast); */
+  /* free_ast(ast); */
+  return ast->val;
 }
