@@ -18,7 +18,8 @@
   O(error_invalid_operation_between_number_and_list) \
   O(error_invalid_rhs_for_binary_expression) \
   O(error_invalid_assignee_for_assignment) \
-  O(error_invalid_expression_in_commas)
+  O(error_invalid_expression_in_commas)\
+  O(error_use_of_undeclared_variable)
 
 #define __ENUM(err) err,
 #define __CASE_TOSTR(err) case err: return #err;

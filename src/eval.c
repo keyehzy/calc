@@ -216,7 +216,7 @@ value evaluate_ast(AST *ast, evaluator *ev) {
                 return evaluate_ast(child_1(assign), ev);
             }
         }
-        CHECK_NOT_REACHED(); /* error: use of undeclared variable */
+        emit_error(error_use_of_undeclared_variable, ast->loc);
         break;
     }
 
