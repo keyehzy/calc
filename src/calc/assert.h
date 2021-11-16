@@ -15,7 +15,10 @@
   O(error_unexpected_token_after_let)           \
   O(error_malformed_expression)                 \
   O(error_missing_expected_token)               \
-  O(error_invalid_operation_between_number_and_list)
+  O(error_invalid_operation_between_number_and_list) \
+  O(error_invalid_rhs_for_binary_expression) \
+  O(error_invalid_assignee_for_assignment) \
+  O(error_invalid_expression_in_commas)
 
 #define __ENUM(err) err,
 #define __CASE_TOSTR(err) case err: return #err;

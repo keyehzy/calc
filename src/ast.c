@@ -222,9 +222,15 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
                 goto end;
             comma_flag = /*true*/ 1;
             new_o      = operation_from_tk(L_PEEK(), 0);
+            codeloc commas_loc = L_PEEK().loc;
             L_SKIP();
             PushVector(&tree, parse_expr(lex, new_o, /*commas*/ 1));
-            CHECK(AST_BACK(&tree)->kind != ast_invalid);
+
+            if(AST_BACK(&tree)->kind == ast_invalid) {
+              emit_error(error_invalid_expression_in_commas,
+                         new_loc(lhs->loc.begin, commas_loc.end));
+            }
+
             continue;
         }
         case tk_operator: {
@@ -235,24 +241,29 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
                 goto end;
             }
 
+            codeloc token_loc = L_PEEK().loc;
             L_SKIP();
-
             PushVector(&tree, parse_expr(lex, new_o, commas));
-            CHECK(AST_BACK(&tree)->kind != ast_invalid); /* error: invalid
-                                                          * operand binary
-                                                          * expression */
+
+            if(AST_BACK(&tree)->kind == ast_invalid) {
+              emit_error(error_invalid_rhs_for_binary_expression,
+                         new_loc(lhs->loc.begin, token_loc.end));
+            }
+
             break;
         }
 
         case tk_equal: {
             CHECK(lhs->kind == ast_variable);
-
+            codeloc equal_loc = L_PEEK().loc;
             L_SKIP();
 
             PushVector(&tree, parse_expr1(lex));
-            CHECK(AST_BACK(&tree)->kind != ast_invalid); /* error: invalid
-                                                          * operand for
-                                                          * assignment */
+
+            if(AST_BACK(&tree)->kind == ast_invalid) {
+              emit_error(error_invalid_assignee_for_assignment,
+                         new_loc(lhs->loc.begin, equal_loc.end));
+            }
 
             combine_tree(&tree, (operation){0});
             AST_BACK(&tree)->kind = ast_assignment;
