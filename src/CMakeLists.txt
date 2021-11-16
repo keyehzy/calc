@@ -5,14 +5,13 @@ add_executable(
   calc.c
 )
 
-target_link_libraries(calc PRIVATE calc-lib readline m)
+target_link_libraries(calc PRIVATE calc-lib editline m)
 
 add_library(
   calc-lib
   calc/assert.h
   calc/ast.h
   calc/codeloc.h
-  calc/eval.h
   calc/token.h
   calc/vector.h
   assert.c

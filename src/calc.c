@@ -3,8 +3,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <readline/history.h>
-#include <readline/readline.h>
+#include <editline/readline.h>
 
 void rec_eval(ReturnExpr ret, int nested) {
     switch (ret.type) {
