@@ -30,6 +30,15 @@ TEST(test_ast, test_statements) {
     }
 
     {
+        lexer lex = new_lexer("4.20i");
+        AST * ast = parse_program(&lex);
+        EXPECT_EQ(ast->kind, ast_module);
+        EXPECT_EQ(child_0(ast)->kind, ast_number_literal);
+        free_ast(ast);
+    }
+
+
+    {
         lexer lex = new_lexer("-1");
         AST * ast = parse_program(&lex);
         EXPECT_EQ(ast->kind, ast_module);

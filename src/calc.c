@@ -8,17 +8,25 @@
 
 void rec_eval(ReturnExpr ret, int nested) {
     switch (ret.type) {
-    case Number:
+    case Real:
         if (nested) {
-            printf(" %.9lf ", ret.value.double_val);
+            printf(" %.9lf ", ret.double_val);
         } else {
-            printf("%.9lf\n", ret.value.double_val);
+            printf("%.9lf\n", ret.double_val);
         }
         break;
+   case Complex: {
+        if (nested) {
+          printf(" %.9lf + %.9lfi ", creal(ret.complex_val), cimag(ret.complex_val));
+        } else {
+            printf("%.9lf + %.9lfi\n", creal(ret.complex_val), cimag(ret.complex_val));
+        }
+        break;
+   }
     case List:
         printf("{");
-        for (int i = 0; i < Size(&ret.value.list_val); i++) {
-            rec_eval(*((ReturnExpr *)GetVector(&ret.value.list_val, i)),
+        for (int i = 0; i < Size(&ret.list_val); i++) {
+            rec_eval(*((ReturnExpr *)GetVector(&ret.list_val, i)),
                      /*nested*/ 1);
         }
         printf("}");

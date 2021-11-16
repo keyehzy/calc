@@ -68,6 +68,7 @@ static token parse_number(lexer *lex) {
     }
 
 finish:
+    if(it[0] == 'i') it += 1;
     end         = it;
     lex->buffer_   = end;
     codeloc loc = (codeloc){.begin = begin, .end = end};

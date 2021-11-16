@@ -17,9 +17,6 @@ ENUMERATE_FUNCTIONS(STATIC_FUNCS)
 ENUMERATE_CONSTANTS(STATIC_CONSTS)
 #undef STATIC_FUNCS
 
-#define NUMBER(a) (a).value.double_val
-#define LIST(a) (a).value.list_val
-
 /* Evaluator */
 
 typedef struct {
@@ -48,28 +45,35 @@ static int compare_variable(AST *a, AST *b) {
 
 static ReturnExpr NewNumber(double val) {
     ReturnExpr ret;
-    ret.type    = Number;
-    NUMBER(ret) = val;
+    ret.type    = Real;
+    ret.double_val = val;
+    return ret;
+}
+
+static ReturnExpr NewComplex(double _Complex cmplx) {
+    ReturnExpr ret;
+    ret.type    = Complex;
+    ret.complex_val = cmplx;
     return ret;
 }
 
 static ReturnExpr NewList(vector list) {
     ReturnExpr ret;
     ret.type  = List;
-    LIST(ret) = list;
+    ret.list_val = list;
     return ret;
 }
 
 static ReturnExpr
 operate_binary_on_list_element(ReturnExpr a, ReturnExpr b,
                                ReturnExpr (*func)(ReturnExpr, ReturnExpr)) {
-    int N = Size(&LIST(a));
-    CHECK(N == Size(&LIST(b)));
+    int N = Size(&a.list_val);
+    CHECK(N == Size(&b.list_val));
     vector list = NewVector();
     for (int i = 0; i < N; i++) {
         ReturnExpr *s1 = (ReturnExpr *)malloc(sizeof(ReturnExpr));
-        ReturnExpr *r1 = GetVector(&LIST(a), i);
-        ReturnExpr *r2 = GetVector(&LIST(b), i);
+        ReturnExpr *r1 = GetVector(&a.list_val, i);
+        ReturnExpr *r2 = GetVector(&b.list_val, i);
         *s1            = func(*r1, *r2);
         PushVector(&list, s1);
     }
@@ -78,11 +82,11 @@ operate_binary_on_list_element(ReturnExpr a, ReturnExpr b,
 
 static ReturnExpr
 operate_unary_on_list_element(ReturnExpr a, ReturnExpr (*func)(ReturnExpr)) {
-    int    N    = Size(&LIST(a));
+    int    N    = Size(&a.list_val);
     vector list = NewVector();
     for (int i = 0; i < N; i++) {
         ReturnExpr *s1 = (ReturnExpr *)malloc(sizeof(ReturnExpr));
-        ReturnExpr *r1 = GetVector(&LIST(a), i);
+        ReturnExpr *r1 = GetVector(&a.list_val, i);
         *s1            = func(*r1);
         PushVector(&list, s1);
     }
@@ -90,65 +94,101 @@ operate_unary_on_list_element(ReturnExpr a, ReturnExpr (*func)(ReturnExpr)) {
 }
 
 static ReturnExpr sum(ReturnExpr a, ReturnExpr b) {
-    if (a.type == Number && b.type == Number)
-        return NewNumber(NUMBER(a) + NUMBER(b));
-    else if (a.type == List && b.type == List) {
-        return operate_binary_on_list_element(a, b, sum);
-    } else {
-        CHECK_NOT_REACHED();
-    }
+  if (a.type == Real && b.type == Real) {
+    return NewNumber(a.double_val + b.double_val);
+  } else if (a.type == Real && b.type == Complex) {
+    return NewComplex(a.double_val + b.complex_val);
+  } else if (a.type == Complex && b.type == Real) {
+    return NewComplex(a.complex_val + b.double_val);
+  } else if (a.type == Complex && b.type == Complex) {
+    return NewComplex(a.complex_val + b.complex_val);
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, sum);
+  } else {
+    CHECK_NOT_REACHED();
+  }
 }
 
 static ReturnExpr sub(ReturnExpr a, ReturnExpr b) {
-    if (a.type == Number && b.type == Number)
-        return NewNumber(NUMBER(a) - NUMBER(b));
-    else if (a.type == List && b.type == List) {
-        return operate_binary_on_list_element(a, b, sub);
-    } else {
-        CHECK_NOT_REACHED();
-    }
+  if (a.type == Real && b.type == Real) {
+    return NewNumber(a.double_val - b.double_val);
+  } else if (a.type == Real && b.type == Complex) {
+    return NewComplex(a.double_val - b.complex_val);
+  } else if (a.type == Complex && b.type == Real) {
+    return NewComplex(a.complex_val - b.double_val);
+  } else if (a.type == Complex && b.type == Complex) {
+    return NewComplex(a.complex_val - b.complex_val);
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, sub);
+  } else {
+    CHECK_NOT_REACHED();
+  }
 }
 
 static ReturnExpr mul(ReturnExpr a, ReturnExpr b) {
-    if (a.type == Number && b.type == Number)
-        return NewNumber(NUMBER(a) * NUMBER(b));
-    else if (a.type == List && b.type == List) {
-        return operate_binary_on_list_element(a, b, mul);
-    } else {
-        CHECK_NOT_REACHED();
-    }
+  if (a.type == Real && b.type == Real) {
+    return NewNumber(a.double_val * b.double_val);
+  } else if (a.type == Real && b.type == Complex) {
+    return NewComplex(a.double_val * b.complex_val);
+  } else if (a.type == Complex && b.type == Real) {
+    return NewComplex(a.complex_val * b.double_val);
+  } else if (a.type == Complex && b.type == Complex) {
+    return NewComplex(a.complex_val * b.complex_val);
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, mul);
+  } else {
+    CHECK_NOT_REACHED();
+  }
 }
 
 static ReturnExpr divide(ReturnExpr a, ReturnExpr b) {
-    if (a.type == Number && b.type == Number)
-        return NewNumber(NUMBER(a) / NUMBER(b));
-    else if (a.type == List && b.type == List) {
-        return operate_binary_on_list_element(a, b, divide);
-    } else {
-        CHECK_NOT_REACHED();
-    }
+  if (a.type == Real && b.type == Real) {
+    return NewNumber(a.double_val / b.double_val);
+  } else if (a.type == Real && b.type == Complex) {
+    return NewComplex(a.double_val / b.complex_val);
+  } else if (a.type == Complex && b.type == Real) {
+    return NewComplex(a.complex_val / b.double_val);
+  } else if (a.type == Complex && b.type == Complex) {
+    return NewComplex(a.complex_val / b.complex_val);
+  } else if (a.type == List && b.type == List) {
+    return operate_binary_on_list_element(a, b, divide);
+  } else {
+    CHECK_NOT_REACHED();
+  }
 }
 
 static ReturnExpr negate(ReturnExpr a) {
-    if (a.type == Number) {
-        return NewNumber(-NUMBER(a));
-    } else if (a.type == List) {
-        return operate_unary_on_list_element(a, negate);
-    } else {
-        CHECK_NOT_REACHED();
-    }
+  if (a.type == Real) {
+    return NewNumber(-a.double_val);
+  } else if (a.type == Complex) {
+    return NewComplex(-a.complex_val);
+  } else if (a.type == List) {
+    return operate_unary_on_list_element(a, negate);
+  } else {
+    CHECK_NOT_REACHED();
+  }
 }
 
 static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
-    CHECK(a.type == Number);
-    CHECK(b.type == Number);
-    return NewNumber(pow(NUMBER(a), NUMBER(b)));
+    if(a.type == Real && b.type == Real) {
+      return NewNumber(pow(a.double_val, b.double_val));
+    } else if(a.type == Real && b.type == Complex) {
+      return NewNumber(cpow(a.double_val, b.complex_val));
+    } else if(a.type == Complex && b.type == Real) {
+      return NewNumber(cpow(a.complex_val, b.double_val));
+    } else if(a.type == Complex && b.type == Complex) {
+      return NewNumber(cpow(a.complex_val, b.complex_val));
+    } else {
+      CHECK_NOT_REACHED();
+    }
 }
 
 #define CASE_BUILTIN_FUNCS(funcs)                                              \
     static ReturnExpr fn_##funcs(ReturnExpr a) {                               \
-        if (a.type == Number) {                                                \
-            return NewNumber(funcs(NUMBER(a)));                                \
+        if (a.type == Real) {                                                  \
+            return NewNumber(funcs(a.double_val));                             \
+        } else if (a.type == Complex) {                                        \
+            return NewComplex(c##funcs(a.complex_val));                        \
         } else if (a.type == List) {                                           \
             return operate_unary_on_list_element(a, fn_##funcs);               \
         } else {                                                               \
@@ -221,7 +261,12 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
 
     case ast_number_literal: {
         char * name  = normalized_name(ast->loc);
-        double value = strtod(name, NULL);
+        char * endptr = NULL;
+        double value = strtod(name, &endptr);  /* TODO: parse complex number */
+        if(endptr[0] == 'i') {
+          free(name);
+          return NewComplex(value * I);
+        }
         free(name);
         return NewNumber(value);
     }

@@ -4,6 +4,8 @@
 #include <calc/token.h>
 #include <calc/vector.h>
 
+#include <complex.h>
+
 #define AST_BACK(x) ((AST *)BackVector(x))
 #define AST_GET(x, i) ((AST *)GetVector(x, i))
 
@@ -79,11 +81,12 @@ typedef struct ast {
 } AST;
 
 typedef struct {
-    enum { Number, List } type;
+    enum { Real, Complex, List } type;
     union {
         double double_val;
+        double _Complex complex_val;
         vector list_val;
-    } value;
+    };
 } ReturnExpr;
 
 ReturnExpr evaluate(const char *);
