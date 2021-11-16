@@ -71,15 +71,6 @@ typedef struct {
     associativity assoc;
 } operation;
 
-typedef struct ast {
-    ast_kind  kind;
-    codeloc   loc;
-    operation op;
-    vector    children;
-    vector    fn_declarations;
-    vector    var_declarations;
-} AST;
-
 typedef struct {
     enum { Real, Complex, List } type;
     union {
@@ -87,9 +78,19 @@ typedef struct {
         double _Complex complex_val;
         vector list_val;
     };
-} ReturnExpr;
+} value;
 
-ReturnExpr evaluate(const char *);
+typedef struct ast {
+  ast_kind  kind;
+  codeloc   loc;
+  operation op;
+  vector    children;
+  vector    fn_declarations;
+  vector    var_declarations;
+  value val;
+} AST;
+
+value evaluate(const char *);
 
 AST *parse_expr(lexer *, operation, int);
 AST *parse_expr1(lexer *);

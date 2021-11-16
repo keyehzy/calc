@@ -9,11 +9,11 @@
 
 #define EPS 1e-9
 
-#define STATIC_FUNCS(func) static ReturnExpr fn_##func(ReturnExpr);
+#define STATIC_FUNCS(func) static value fn_##func(value);
 ENUMERATE_FUNCTIONS(STATIC_FUNCS)
 #undef STATIC_FUNCS
 
-#define STATIC_CONSTS(constant) static ReturnExpr const_##constant();
+#define STATIC_CONSTS(constant) static value const_##constant();
 ENUMERATE_CONSTANTS(STATIC_CONSTS)
 #undef STATIC_FUNCS
 
@@ -43,57 +43,57 @@ static int compare_variable(AST *a, AST *b) {
     return strcmp(normalized_name(a->loc), normalized_name(b->loc));
 }
 
-static ReturnExpr NewNumber(double val) {
-    ReturnExpr ret;
+static value NewNumber(double val) {
+    value ret;
     ret.type    = Real;
     ret.double_val = val;
     return ret;
 }
 
-static ReturnExpr NewComplex(double _Complex cmplx) {
-    ReturnExpr ret;
+static value NewComplex(double _Complex cmplx) {
+    value ret;
     ret.type    = Complex;
     ret.complex_val = cmplx;
     return ret;
 }
 
-static ReturnExpr NewList(vector list) {
-    ReturnExpr ret;
+static value NewList(vector list) {
+    value ret;
     ret.type  = List;
     ret.list_val = list;
     return ret;
 }
 
-static ReturnExpr
-operate_binary_on_list_element(ReturnExpr a, ReturnExpr b,
-                               ReturnExpr (*func)(ReturnExpr, ReturnExpr)) {
+static value
+operate_binary_on_list_element(value a, value b,
+                               value (*func)(value, value)) {
     int N = Size(&a.list_val);
     CHECK(N == Size(&b.list_val));
     vector list = NewVector();
     for (int i = 0; i < N; i++) {
-        ReturnExpr *s1 = (ReturnExpr *)malloc(sizeof(ReturnExpr));
-        ReturnExpr *r1 = GetVector(&a.list_val, i);
-        ReturnExpr *r2 = GetVector(&b.list_val, i);
+        value *s1 = (value *)malloc(sizeof(value));
+        value *r1 = GetVector(&a.list_val, i);
+        value *r2 = GetVector(&b.list_val, i);
         *s1            = func(*r1, *r2);
         PushVector(&list, s1);
     }
     return NewList(list);
 }
 
-static ReturnExpr
-operate_unary_on_list_element(ReturnExpr a, ReturnExpr (*func)(ReturnExpr)) {
+static value
+operate_unary_on_list_element(value a, value (*func)(value)) {
     int    N    = Size(&a.list_val);
     vector list = NewVector();
     for (int i = 0; i < N; i++) {
-        ReturnExpr *s1 = (ReturnExpr *)malloc(sizeof(ReturnExpr));
-        ReturnExpr *r1 = GetVector(&a.list_val, i);
+        value *s1 = (value *)malloc(sizeof(value));
+        value *r1 = GetVector(&a.list_val, i);
         *s1            = func(*r1);
         PushVector(&list, s1);
     }
     return NewList(list);
 }
 
-static ReturnExpr sum(ReturnExpr a, ReturnExpr b) {
+static value sum(value a, value b) {
   if (a.type == Real && b.type == Real) {
     return NewNumber(a.double_val + b.double_val);
   } else if (a.type == Real && b.type == Complex) {
@@ -109,7 +109,7 @@ static ReturnExpr sum(ReturnExpr a, ReturnExpr b) {
   }
 }
 
-static ReturnExpr sub(ReturnExpr a, ReturnExpr b) {
+static value sub(value a, value b) {
   if (a.type == Real && b.type == Real) {
     return NewNumber(a.double_val - b.double_val);
   } else if (a.type == Real && b.type == Complex) {
@@ -125,7 +125,7 @@ static ReturnExpr sub(ReturnExpr a, ReturnExpr b) {
   }
 }
 
-static ReturnExpr mul(ReturnExpr a, ReturnExpr b) {
+static value mul(value a, value b) {
   if (a.type == Real && b.type == Real) {
     return NewNumber(a.double_val * b.double_val);
   } else if (a.type == Real && b.type == Complex) {
@@ -141,7 +141,7 @@ static ReturnExpr mul(ReturnExpr a, ReturnExpr b) {
   }
 }
 
-static ReturnExpr divide(ReturnExpr a, ReturnExpr b) {
+static value divide(value a, value b) {
   if (a.type == Real && b.type == Real) {
     return NewNumber(a.double_val / b.double_val);
   } else if (a.type == Real && b.type == Complex) {
@@ -157,7 +157,7 @@ static ReturnExpr divide(ReturnExpr a, ReturnExpr b) {
   }
 }
 
-static ReturnExpr negate(ReturnExpr a) {
+static value negate(value a) {
   if (a.type == Real) {
     return NewNumber(-a.double_val);
   } else if (a.type == Complex) {
@@ -169,7 +169,7 @@ static ReturnExpr negate(ReturnExpr a) {
   }
 }
 
-static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
+static value exponentiate(value a, value b) {
     if(a.type == Real && b.type == Real) {
       return NewNumber(pow(a.double_val, b.double_val));
     } else if(a.type == Real && b.type == Complex) {
@@ -184,7 +184,7 @@ static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
 }
 
 #define CASE_BUILTIN_FUNCS(funcs)                                              \
-    static ReturnExpr fn_##funcs(ReturnExpr a) {                               \
+    static value fn_##funcs(value a) {                               \
         if (a.type == Real) {                                                  \
             return NewNumber(funcs(a.double_val));                             \
         } else if (a.type == Complex) {                                        \
@@ -198,11 +198,11 @@ static ReturnExpr exponentiate(ReturnExpr a, ReturnExpr b) {
 ENUMERATE_FUNCTIONS(CASE_BUILTIN_FUNCS)
 #undef CASE_BUILTIN_FUNCS
 
-static ReturnExpr const_pi() { return NewNumber(M_PI); }
+static value const_pi() { return NewNumber(M_PI); }
 
-static ReturnExpr const_e() { return NewNumber(M_E); }
+static value const_e() { return NewNumber(M_E); }
 
-ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
+value evaluate_ast(AST *ast, evaluator *ev) {
     switch (ast->kind) {
 
     case ast_variable: {
@@ -229,12 +229,12 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
         push_scope(ev, ast);
         vector statements = NewVector();
         for (int i = 0; i < Size(&ast->children); i++) {
-            ReturnExpr *elem = malloc(sizeof(ReturnExpr));
+            value *elem = malloc(sizeof(value));
             *elem            = evaluate_ast(GetVector(&ast->children, i), ev);
             PushVector(&statements, elem);
         }
         pop_scope(ev);
-        return *((ReturnExpr *)BackVector(&statements)); /* module returns
+        return *((value *)BackVector(&statements)); /* module returns
                                                           * result of last
                                                           * expression */
     }
@@ -243,13 +243,13 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
         vector list_elements = NewVector();
         if (child_0(ast)->kind == ast_comma_expr) {
             for (int i = 0; i < Size(&child_0(ast)->children); i++) {
-                ReturnExpr *elem = malloc(sizeof(ReturnExpr));
+                value *elem = malloc(sizeof(value));
                 *elem            = evaluate_ast(child(child_0(ast), i),
                                      ev); /* bad code i think */
                 PushVector(&list_elements, elem);
             }
         } else {
-            ReturnExpr *elem = malloc(sizeof(ReturnExpr));
+            value *elem = malloc(sizeof(value));
             *elem = evaluate_ast(child_0(ast), ev); /* bad code i think */
             PushVector(&list_elements, elem);
         }
@@ -326,11 +326,11 @@ ReturnExpr evaluate_ast(AST *ast, evaluator *ev) {
     CHECK_NOT_REACHED();
 }
 
-ReturnExpr evaluate(const char *input) {
+value evaluate(const char *input) {
     lexer      lex   = new_lexer(input);
     AST *      ast   = parse_program(&lex);
     evaluator  ev    = NewEvaluator();
-    ReturnExpr value = evaluate_ast(ast, &ev);
+    value value = evaluate_ast(ast, &ev);
     free_ast(ast);
     return value;
 }

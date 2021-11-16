@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <editline/readline.h>
 
-void rec_eval(ReturnExpr ret, int nested, int last) {
+void rec_eval(value ret, int nested, int last) {
   switch (ret.type) {
     case Real:
       if (nested) {
@@ -35,7 +35,7 @@ void rec_eval(ReturnExpr ret, int nested, int last) {
       int size = Size(&ret.list_val);
       for (int i = 0; i < size; i++) {
         int last = i == size-1;
-        rec_eval(*((ReturnExpr *)GetVector(&ret.list_val, i)),
+        rec_eval(*((value *)GetVector(&ret.list_val, i)),
                  /*nested*/ 1, last);
       }
       printf("}");
@@ -50,7 +50,7 @@ int repl() {
     char *buffer;
     while ((buffer = readline("> "))) {
         if (buffer && *buffer) {
-            ReturnExpr ret = evaluate(buffer);
+            value ret = evaluate(buffer);
             rec_eval(ret, /*nested*/ 0, /*last*/ 0);
             add_history(buffer);
         }
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
         if (c == 'e') {
             if (optarg && *optarg) {
-                ReturnExpr ret = evaluate(optarg);
+                value ret = evaluate(optarg);
                 rec_eval(ret, /*nested*/ 0, /*last*/ 0);
             }
         }
