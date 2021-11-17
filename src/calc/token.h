@@ -4,15 +4,6 @@
 #include <calc/codeloc.h>
 #include <calc/vector.h>
 
-#define L_SKIP() skip(lex)
-#define L_SKIP_CHECKED(x)                                   \
-  if (L_PEEK().type != (x)) {                               \
-    emit_error(error_missing_expected_token, L_PEEK().loc); \
-  } else {                                                  \
-    skip(lex);                                              \
-  }
-#define L_PEEK() peek(lex)
-
 #define ENUMERATE_NUMBERS(O) \
   O('0')                     \
   O('1')                     \
@@ -143,4 +134,5 @@ typedef struct lexer {
 
 token peek(struct lexer *);
 void skip(struct lexer *);
+void skip_checked(lexer *, token_type);
 lexer new_lexer(const char *);

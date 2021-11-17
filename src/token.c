@@ -18,6 +18,14 @@ token peek(lexer *self) { return self->last_token_; }
 
 void skip(lexer *self) { self->last_token_ = next_token(self); }
 
+void skip_checked(lexer *lex, token_type type) {
+  if (peek(lex).type != type) {
+    emit_error(error_missing_expected_token, peek(lex).loc);
+  } else {
+    skip(lex);
+  }
+}
+
 lexer new_lexer(const char *buffer) {
   lexer lex = {0};
   lex.buffer_ = buffer;

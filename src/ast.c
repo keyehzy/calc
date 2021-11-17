@@ -235,7 +235,7 @@ static int compare_variable(AST *a, AST *b) {
 
 AST *find_declared_variable(AST *ast, AST *scope) {
   vector var_decl = scope->var_declarations;
-   for (int i = 0; i < Size(&var_decl); i++) {
+  for (int i = 0; i < Size(&var_decl); i++) {
     AST *decl = GetVector(&var_decl, i);
     AST *assign = child_0(decl);
 
@@ -243,12 +243,12 @@ AST *find_declared_variable(AST *ast, AST *scope) {
       return child_1(assign);
     }
   }
-   return NULL;
+  return NULL;
 }
 
 void eval_identifier(AST *ast, AST *scope) {
   AST *variable;
-  if((variable = find_declared_variable(ast, scope))) {
+  if ((variable = find_declared_variable(ast, scope))) {
     ast->val = variable->val;
   } else {
     emit_error(error_use_of_undeclared_variable, ast->loc);
@@ -386,18 +386,18 @@ static operation operation_from_tk(token t, int context) {
 }
 
 static AST *parse_primary_expr(lexer *lex) {
-  switch (L_PEEK().type) {
+  switch (peek(lex).type) {
     case tk_identifier: {
-      codeloc identifier_span = L_PEEK().loc;
-      L_SKIP();
+      codeloc identifier_span = peek(lex).loc;
+      skip(lex);
       AST *identifier = new_ast(ast_variable, identifier_span, (operation){0});
       eval_identifier(identifier, AST_BACK(&lex->scope));
       return identifier;
     }
 
     case tk_number: {
-      codeloc number_span = L_PEEK().loc;
-      L_SKIP();
+      codeloc number_span = peek(lex).loc;
+      skip(lex);
       AST *number_ast =
           new_ast(ast_number_literal, number_span, (operation){0});
       eval_number_literal(number_ast);
@@ -405,10 +405,10 @@ static AST *parse_primary_expr(lexer *lex) {
     }
 
     case tk_left_paren: {
-      L_SKIP();
+      skip(lex);
       AST *paren_expr = parse_expr1(lex);
-      CHECK(L_PEEK().type == tk_right_paren);
-      L_SKIP();
+      CHECK(peek(lex).type == tk_right_paren);
+      skip(lex);
       AST *ast = new_ast(ast_paren_expr, paren_expr->loc,
                          (operation){.prec = prec_paren});
       PushVector(&ast->children, paren_expr);
@@ -417,10 +417,10 @@ static AST *parse_primary_expr(lexer *lex) {
     }
 
     case tk_left_curly: {
-      L_SKIP();
+      skip(lex);
       AST *curly_expr = parse_expr1(lex);
-      CHECK(L_PEEK().type == tk_right_curly);
-      L_SKIP();
+      CHECK(peek(lex).type == tk_right_curly);
+      skip(lex);
       AST *ast = new_ast(ast_curly_expr, curly_expr->loc,
                          (operation){.prec = prec_paren});
       PushVector(&ast->children, curly_expr);
@@ -429,9 +429,9 @@ static AST *parse_primary_expr(lexer *lex) {
     }
 
     case tk_operator: {
-      operation op = operation_from_tk(L_PEEK(), 1);
-      codeloc operator_span = L_PEEK().loc;
-      L_SKIP();
+      operation op = operation_from_tk(peek(lex), 1);
+      codeloc operator_span = peek(lex).loc;
+      skip(lex);
       AST *ast = new_ast(ast_unary_expr, operator_span, op);
       PushVector(&ast->children, parse_primary_expr(lex));
       eval_unary_expr(ast);
@@ -440,8 +440,8 @@ static AST *parse_primary_expr(lexer *lex) {
 
 #define PARSE_CONST(constant)                                           \
   case tk_##constant: {                                                 \
-    codeloc const_span = L_PEEK().loc;                                  \
-    L_SKIP();                                                           \
+    codeloc const_span = peek(lex).loc;                                 \
+    skip(lex);                                                          \
     AST *c = new_ast(ast_const_##constant, const_span, (operation){0}); \
     c->val = const_##constant();                                        \
     return c;                                                           \
@@ -453,9 +453,9 @@ static AST *parse_primary_expr(lexer *lex) {
   case tk_##fn: {                                                              \
     operation op =                                                             \
         (operation){.kind = op_##fn, .prec = prec_unary, .assoc = assoc_left}; \
-    codeloc operator_span = L_PEEK().loc;                                      \
-    L_SKIP();                                                                  \
-    CHECK(L_PEEK().type == tk_left_paren);                                     \
+    codeloc operator_span = peek(lex).loc;                                     \
+    skip(lex);                                                                 \
+    CHECK(peek(lex).type == tk_left_paren);                                    \
     AST *ast = new_ast(ast_unary_expr, operator_span, op);                     \
     PushVector(&ast->children, parse_primary_expr(lex));                       \
     eval_unary_expr(ast);                                                      \
@@ -477,13 +477,13 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
   int comma_flag = /*false*/ 0;
 
   while (1) {
-    switch (L_PEEK().type) {
+    switch (peek(lex).type) {
       case tk_comma: {
         if (commas) goto end;
         comma_flag = /*true*/ 1;
-        new_o = operation_from_tk(L_PEEK(), 0);
-        codeloc commas_loc = L_PEEK().loc;
-        L_SKIP();
+        new_o = operation_from_tk(peek(lex), 0);
+        codeloc commas_loc = peek(lex).loc;
+        skip(lex);
         PushVector(&tree, parse_expr(lex, new_o, /*commas*/ 1));
 
         if (AST_BACK(&tree)->kind == ast_invalid) {
@@ -494,15 +494,15 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
         continue;
       }
       case tk_operator: {
-        new_o = operation_from_tk(L_PEEK(), 0);
+        new_o = operation_from_tk(peek(lex), 0);
 
         if (o.prec > new_o.prec ||
             (o.prec == new_o.prec && new_o.assoc == assoc_right)) {
           goto end;
         }
 
-        codeloc token_loc = L_PEEK().loc;
-        L_SKIP();
+        codeloc token_loc = peek(lex).loc;
+        skip(lex);
         PushVector(&tree, parse_expr(lex, new_o, commas));
 
         if (AST_BACK(&tree)->kind == ast_invalid) {
@@ -517,8 +517,8 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
         if (lhs->kind != ast_variable) {
           emit_error(error_invalid_lhs_for_assignment, lhs->loc);
         }
-        codeloc equal_loc = L_PEEK().loc;
-        L_SKIP();
+        codeloc equal_loc = peek(lex).loc;
+        skip(lex);
 
         PushVector(&tree, parse_expr1(lex));
 
@@ -577,7 +577,7 @@ static void combine_tree(vector *tree, operation o) {
 
 AST *parse_expr(lexer *lex, operation o, int commas) {
   AST *ast = parse_primary_expr(lex);
-  if (L_PEEK().type == tk_comma) return ast;
+  if (peek(lex).type == tk_comma) return ast;
   return parse_rest_expr(lex, ast, o, commas);
 }
 
@@ -592,17 +592,17 @@ void declare_in_scope(lexer *lex, AST *declaration) {
 }
 
 static AST *parse_let_statement(lexer *lex) {
-  const char *begin = L_PEEK().loc.begin;
+  const char *begin = peek(lex).loc.begin;
 
-  L_SKIP(); /* skip 'let' */
+  skip(lex); /* skip 'let' */
 
-  if (L_PEEK().type == tk_identifier) {
+  if (peek(lex).type == tk_identifier) {
     AST *lhs = make_ast(ast_variable);
-    lhs->loc = L_PEEK().loc;
+    lhs->loc = peek(lex).loc;
 
-    L_SKIP();
+    skip(lex);
 
-    if(find_declared_variable(lhs, AST_BACK(&lex->scope))) {
+    if (find_declared_variable(lhs, AST_BACK(&lex->scope))) {
       emit_error(error_redeclaring_declared_variable, lhs->loc);
     }
 
@@ -613,24 +613,23 @@ static AST *parse_let_statement(lexer *lex) {
     PushVector(&declaration->children, rhs);
     declaration->val = rhs->val;
     declare_in_scope(lex, declaration);
-
-    L_SKIP_CHECKED(tk_semicolon);
+    skip_checked(lex, tk_semicolon);
     return declaration;
   }
-  emit_error(error_unexpected_token_after_let, L_PEEK().loc);
+  emit_error(error_unexpected_token_after_let, peek(lex).loc);
   return invalid_ast();
 }
 
 static AST *parse_statement(lexer *lex) {
-  switch (L_PEEK().type) {
+  switch (peek(lex).type) {
     case tk_identifier: {
       AST *identifier = make_ast(ast_variable);
-      identifier->loc = L_PEEK().loc;
+      identifier->loc = peek(lex).loc;
       eval_identifier(identifier, AST_BACK(&lex->scope));
-      L_SKIP();
+      skip(lex);
 
-      if (L_PEEK().type == tk_semicolon) {
-        L_SKIP();
+      if (peek(lex).type == tk_semicolon) {
+        skip(lex);
         return identifier;
       } else {
         return parse_rest_expr(lex, identifier, (operation){0},
@@ -661,12 +660,12 @@ AST *parse_program(lexer *lex) {
     if (statement->kind != ast_invalid) {
       PushVector(&module->children, statement);
     } else {
-      switch (L_PEEK().type) {
+      switch (peek(lex).type) {
         case tk_eof:
           goto end;
 
         case tk_semicolon:
-          L_SKIP();
+          skip(lex);
           break;
 
         default:
