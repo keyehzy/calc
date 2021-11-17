@@ -17,7 +17,6 @@ add_library(
   assert.c
   ast.c
   codeloc.c
-  eval.c
   token.c
   vector.c
 )

@@ -67,9 +67,9 @@ TEST(test_eval, eval_simple) {
 
   { ASSERT_NEAR(evaluate("let x = 2;").double_val, 2.0, eps); }
 
-  // { ASSERT_NEAR(evaluate("let x = sqrt(9); x;").double_val, 3.0, eps); }
+  { ASSERT_NEAR(evaluate("let x = sqrt(9); x;").double_val, 3.0, eps); }
 
-  // { ASSERT_NEAR(evaluate("let x = 2; let y = x;").double_val, 2.0, eps); }
+  { ASSERT_NEAR(evaluate("let x = 2; let y = x;").double_val, 2.0, eps); }
 
-  // { ASSERT_NEAR(evaluate("let x = 2; x + 1;").double_val, 3.0, eps); }
+  { ASSERT_NEAR(evaluate("let x = 2; x + 1;").double_val, 3.0, eps); }
 }

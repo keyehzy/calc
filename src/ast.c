@@ -1,13 +1,12 @@
 #include <calc/assert.h>
 #include <calc/ast.h>
 #include <calc/token.h>
-#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "calc/vector.h"
-
-void evaluate_ast(AST* ast);
+void evaluate_ast(AST *ast);
 
 static value operate_binary_on_list_element(value a, value b,
                                             value (*func)(value, value)) {
@@ -21,7 +20,7 @@ static value operate_binary_on_list_element(value a, value b,
     *s1 = func(*r1, *r2);
     PushVector(&list, s1);
   }
-  return (value) {.type = List, .list_val = list};
+  return (value){.type = List, .list_val = list};
 }
 
 static value operate_unary_on_list_element(value a, value (*func)(value)) {
@@ -33,74 +32,81 @@ static value operate_unary_on_list_element(value a, value (*func)(value)) {
     *s1 = func(*r1);
     PushVector(&list, s1);
   }
-  return (value) {.type = List, .list_val = list};
+  return (value){.type = List, .list_val = list};
 }
-
 
 static value sum(value a, value b) {
   if (a.type == Real && b.type == Real) {
-    return (value) {.type = Real, .double_val = a.double_val + b.double_val};
+    return (value){.type = Real, .double_val = a.double_val + b.double_val};
   } else if (a.type == Real && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.double_val + b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.double_val + b.complex_val};
   } else if (a.type == Complex && b.type == Real) {
-    return (value) {.type = Complex, .complex_val = a.complex_val + b.double_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val + b.double_val};
   } else if (a.type == Complex && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.complex_val + b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val + b.complex_val};
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, sum);
-  }
-  else {
+  } else {
     CHECK_NOT_REACHED();
   }
 }
 
 static value sub(value a, value b) {
   if (a.type == Real && b.type == Real) {
-    return (value) {.type = Real, .double_val = a.double_val - b.double_val};
+    return (value){.type = Real, .double_val = a.double_val - b.double_val};
   } else if (a.type == Real && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.double_val - b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.double_val - b.complex_val};
   } else if (a.type == Complex && b.type == Real) {
-    return (value) {.type = Complex, .complex_val = a.complex_val - b.double_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val - b.double_val};
   } else if (a.type == Complex && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.complex_val - b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val - b.complex_val};
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, sub);
-  }
-  else {
+  } else {
     CHECK_NOT_REACHED();
   }
 }
 
 static value mul(value a, value b) {
   if (a.type == Real && b.type == Real) {
-    return (value) {.type = Real, .double_val = a.double_val * b.double_val};
+    return (value){.type = Real, .double_val = a.double_val * b.double_val};
   } else if (a.type == Real && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.double_val * b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.double_val * b.complex_val};
   } else if (a.type == Complex && b.type == Real) {
-    return (value) {.type = Complex, .complex_val = a.complex_val * b.double_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val * b.double_val};
   } else if (a.type == Complex && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.complex_val * b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val * b.complex_val};
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, mul);
-  }
-  else {
+  } else {
     CHECK_NOT_REACHED();
   }
 }
 
 static value divide(value a, value b) {
   if (a.type == Real && b.type == Real) {
-    return (value) {.type = Real, .double_val = a.double_val / b.double_val};
+    return (value){.type = Real, .double_val = a.double_val / b.double_val};
   } else if (a.type == Real && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.double_val / b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.double_val / b.complex_val};
   } else if (a.type == Complex && b.type == Real) {
-    return (value) {.type = Complex, .complex_val = a.complex_val / b.double_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val / b.double_val};
   } else if (a.type == Complex && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = a.complex_val / b.complex_val};
+    return (value){.type = Complex,
+                   .complex_val = a.complex_val / b.complex_val};
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, divide);
-  }
-  else {
+  } else {
     CHECK_NOT_REACHED();
   }
 }
@@ -112,21 +118,23 @@ static value negate(value a) {
     return (value){.type = Complex, .complex_val = -a.complex_val};
   } else if (a.type == List) {
     return operate_unary_on_list_element(a, negate);
-  }
-  else {
+  } else {
     CHECK_NOT_REACHED();
   }
 }
 
 static value exponentiate(value a, value b) {
   if (a.type == Real && b.type == Real) {
-    return (value) {.type = Real, .double_val = pow(a.double_val, b.double_val)};
+    return (value){.type = Real, .double_val = pow(a.double_val, b.double_val)};
   } else if (a.type == Real && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = cpow(a.double_val, b.complex_val)};
+    return (value){.type = Complex,
+                   .complex_val = cpow(a.double_val, b.complex_val)};
   } else if (a.type == Complex && b.type == Real) {
-    return (value) {.type = Complex, .complex_val = cpow(a.complex_val, b.double_val)};
+    return (value){.type = Complex,
+                   .complex_val = cpow(a.complex_val, b.double_val)};
   } else if (a.type == Complex && b.type == Complex) {
-    return (value) {.type = Complex, .complex_val = cpow(a.complex_val, b.complex_val)};
+    return (value){.type = Complex,
+                   .complex_val = cpow(a.complex_val, b.complex_val)};
   } else {
     CHECK_NOT_REACHED();
   }
@@ -203,9 +211,7 @@ void eval_unary_expr(AST *ast) {
   }
 }
 
-void eval_paren_expr(AST* ast) {
-  ast->val = child_0(ast)->val;
-}
+void eval_paren_expr(AST *ast) { ast->val = child_0(ast)->val; }
 
 void eval_curly_expr(AST *ast) {
   vector list_elements = NewVector();
@@ -223,9 +229,27 @@ void eval_curly_expr(AST *ast) {
   ast->val = (value){.type = List, .list_val = list_elements};
 }
 
-static value const_pi() { return (value) {.type = Real, .double_val = M_PI}; }
+static int compare_variable(AST *a, AST *b) {
+  return strcmp(normalized_name(a->loc), normalized_name(b->loc));
+}
 
-static value const_e() { return (value) {.type = Real, .double_val = M_E}; }
+void eval_identifier(AST *ast, AST *scope) {
+  vector var_decl = scope->var_declarations;
+  for (int i = 0; i < Size(&var_decl); i++) {
+    AST *decl = GetVector(&var_decl, i);
+    AST *assign = child_0(decl);
+
+    if (compare_variable(ast, child_0(assign)) == 0) {
+      ast->val = child_1(assign)->val;
+      return;
+    }
+  }
+  emit_error(error_use_of_undeclared_variable, ast->loc);
+}
+
+static value const_pi() { return (value){.type = Real, .double_val = M_PI}; }
+
+static value const_e() { return (value){.type = Real, .double_val = M_E}; }
 
 static AST *new_empty_ast();
 
@@ -359,13 +383,15 @@ static AST *parse_primary_expr(lexer *lex) {
       codeloc identifier_span = L_PEEK().loc;
       L_SKIP();
       AST *identifier = new_ast(ast_variable, identifier_span, (operation){0});
+      eval_identifier(identifier, AST_BACK(&lex->scope));
       return identifier;
     }
 
     case tk_number: {
       codeloc number_span = L_PEEK().loc;
       L_SKIP();
-      AST *number_ast = new_ast(ast_number_literal, number_span, (operation){0});
+      AST *number_ast =
+          new_ast(ast_number_literal, number_span, (operation){0});
       eval_number_literal(number_ast);
       return number_ast;
     }
@@ -492,7 +518,9 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
         }
 
         combine_tree(&tree, (operation){0});
-        AST_BACK(&tree)->kind = ast_assignment;
+        AST *assignment = AST_BACK(&tree);
+        assignment->kind = ast_assignment;
+        assignment->val = child_1(assignment)->val;
         goto end;
       }
 
@@ -563,6 +591,7 @@ static AST *parse_let_statement(lexer *lex) {
     AST *declaration = make_ast(ast_declaration);
     declaration->loc = new_loc(begin, rhs->loc.end);
     PushVector(&declaration->children, rhs);
+    declaration->val = rhs->val;
 
     /* push into current scope variable declarations */
     AST *scope = (AST *)BackVector(&lex->scope);
@@ -580,6 +609,7 @@ static AST *parse_statement(lexer *lex) {
     case tk_identifier: {
       AST *identifier = make_ast(ast_variable);
       identifier->loc = L_PEEK().loc;
+      eval_identifier(identifier, AST_BACK(&lex->scope));
       L_SKIP();
 
       if (L_PEEK().type == tk_semicolon) {
@@ -593,6 +623,7 @@ static AST *parse_statement(lexer *lex) {
 
     case tk_let: {
       AST *let_statement = parse_let_statement(lex);
+      let_statement->val = child_0(let_statement)->val;
       return let_statement;
     }
 
@@ -631,4 +662,10 @@ end:
   PopVector(&lex->scope);
   module->val = AST_BACK(&module->children)->val;
   return module;
+}
+
+value evaluate(const char *input) {
+  lexer lex = new_lexer(input);
+  AST *ast = parse_program(&lex);
+  return ast->val;
 }
