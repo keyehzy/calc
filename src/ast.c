@@ -233,18 +233,26 @@ static int compare_variable(AST *a, AST *b) {
   return strcmp(normalized_name(a->loc), normalized_name(b->loc));
 }
 
-void eval_identifier(AST *ast, AST *scope) {
+AST *find_declared_variable(AST *ast, AST *scope) {
   vector var_decl = scope->var_declarations;
-  for (int i = 0; i < Size(&var_decl); i++) {
+   for (int i = 0; i < Size(&var_decl); i++) {
     AST *decl = GetVector(&var_decl, i);
     AST *assign = child_0(decl);
 
     if (compare_variable(ast, child_0(assign)) == 0) {
-      ast->val = child_1(assign)->val;
-      return;
+      return child_1(assign);
     }
   }
-  emit_error(error_use_of_undeclared_variable, ast->loc);
+   return NULL;
+}
+
+void eval_identifier(AST *ast, AST *scope) {
+  AST *variable;
+  if((variable = find_declared_variable(ast, scope))) {
+    ast->val = variable->val;
+  } else {
+    emit_error(error_use_of_undeclared_variable, ast->loc);
+  }
 }
 
 static value const_pi() { return (value){.type = Real, .double_val = M_PI}; }
@@ -506,7 +514,9 @@ static AST *parse_rest_expr(lexer *lex, AST *lhs, operation o, int commas) {
       }
 
       case tk_equal: {
-        CHECK(lhs->kind == ast_variable);
+        if (lhs->kind != ast_variable) {
+          emit_error(error_invalid_lhs_for_assignment, lhs->loc);
+        }
         codeloc equal_loc = L_PEEK().loc;
         L_SKIP();
 
@@ -576,6 +586,11 @@ AST *parse_expr1(lexer *lex) {
   return parse_rest_expr(lex, ast, (operation){0}, /*commas*/ 0);
 }
 
+void declare_in_scope(lexer *lex, AST *declaration) {
+  AST *scope = (AST *)BackVector(&lex->scope);
+  PushVector(&scope->var_declarations, declaration);
+}
+
 static AST *parse_let_statement(lexer *lex) {
   const char *begin = L_PEEK().loc.begin;
 
@@ -584,7 +599,12 @@ static AST *parse_let_statement(lexer *lex) {
   if (L_PEEK().type == tk_identifier) {
     AST *lhs = make_ast(ast_variable);
     lhs->loc = L_PEEK().loc;
+
     L_SKIP();
+
+    if(find_declared_variable(lhs, AST_BACK(&lex->scope))) {
+      emit_error(error_redeclaring_declared_variable, lhs->loc);
+    }
 
     AST *rhs = parse_rest_expr(lex, lhs, (operation){0}, /*commas*/ 0);
 
@@ -592,10 +612,7 @@ static AST *parse_let_statement(lexer *lex) {
     declaration->loc = new_loc(begin, rhs->loc.end);
     PushVector(&declaration->children, rhs);
     declaration->val = rhs->val;
-
-    /* push into current scope variable declarations */
-    AST *scope = (AST *)BackVector(&lex->scope);
-    PushVector(&scope->var_declarations, declaration);
+    declare_in_scope(lex, declaration);
 
     L_SKIP_CHECKED(tk_semicolon);
     return declaration;

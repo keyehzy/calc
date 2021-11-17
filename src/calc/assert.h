@@ -18,7 +18,9 @@
   O(error_invalid_rhs_for_binary_expression)         \
   O(error_invalid_assignee_for_assignment)           \
   O(error_invalid_expression_in_commas)              \
-  O(error_use_of_undeclared_variable)
+  O(error_use_of_undeclared_variable)                \
+  O(error_invalid_lhs_for_assignment)                \
+  O(error_redeclaring_declared_variable)
 
 #define __ENUM(err) err,
 #define __CASE_TOSTR(err) \
