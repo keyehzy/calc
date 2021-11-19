@@ -23,15 +23,16 @@ TEST(test_eval, eval_simple) {
 
   { EXPECT_EQ(evaluate("1.0 * 0.5i").complex_val, 1.0 * 0.5 * I); }
 
-  // { FIXME @@@:
-  //   EXPECT_EQ(evaluate("1.0 / 2.0i").complex_val, 1.0 / 2.0*I);
-  // }
+  { EXPECT_EQ(evaluate("1.0 / 2.0i").complex_val, 1.0 / (2.0 * I)); }
 
   { EXPECT_EQ(evaluate("-0.5i").complex_val, -0.5 * I); }
 
-  // { FIX ME @@@:
-  //   EXPECT_EQ(evaluate("1i^2").complex_val, cpow(I, 2.0));
-  // }
+  {
+    value val = evaluate("1i ^ 2");
+    double _Complex cmplx = cpow(1.0 * I, 2.0);
+    ASSERT_NEAR(creal(val.complex_val), creal(cmplx), eps);
+    ASSERT_NEAR(cimag(val.complex_val), cimag(cmplx), eps);
+  }
 
   { EXPECT_EQ(evaluate("sqrt(2.0i)").complex_val, csqrt(2.0 * I)); }
 
