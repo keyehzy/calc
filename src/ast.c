@@ -10,6 +10,8 @@ void evaluate_ast(AST *ast);
 
 static value operate_binary_on_list_element(value a, value b,
                                             value (*func)(value, value)) {
+  CHECK(a.type == List);
+  CHECK(b.type == List);
   int N = Size(&a.list_val);
   CHECK(N == Size(&b.list_val));
   vector list = NewVector();
@@ -23,7 +25,40 @@ static value operate_binary_on_list_element(value a, value b,
   return (value){.type = List, .list_val = list};
 }
 
+static value operate_binary_on_list_element_with_lvalue(value a, value b,
+                                                        value (*func)(value,
+                                                                      value)) {
+  CHECK(a.type == Real || a.type == Complex);
+  CHECK(b.type == List);
+  int N = Size(&b.list_val);
+  vector list = NewVector();
+  for (int i = 0; i < N; i++) {
+    value *s1 = (value *)malloc(sizeof(value));
+    value *r = GetVector(&b.list_val, i);
+    *s1 = func(a, *r);
+    PushVector(&list, s1);
+  }
+  return (value){.type = List, .list_val = list};
+}
+
+static value operate_binary_on_list_element_with_rvalue(value a, value b,
+                                                        value (*func)(value,
+                                                                      value)) {
+  CHECK(a.type == List);
+  CHECK(b.type == Real || a.type == Complex);
+  int N = Size(&a.list_val);
+  vector list = NewVector();
+  for (int i = 0; i < N; i++) {
+    value *s1 = (value *)malloc(sizeof(value));
+    value *r = GetVector(&a.list_val, i);
+    *s1 = func(*r, b);
+    PushVector(&list, s1);
+  }
+  return (value){.type = List, .list_val = list};
+}
+
 static value operate_unary_on_list_element(value a, value (*func)(value)) {
+  CHECK(a.type == List);
   int N = Size(&a.list_val);
   vector list = NewVector();
   for (int i = 0; i < N; i++) {
@@ -85,6 +120,10 @@ static value mul(value a, value b) {
   } else if (a.type == Complex && b.type == Complex) {
     return (value){.type = Complex,
                    .complex_val = a.complex_val * b.complex_val};
+  } else if ((a.type == Real || a.type == Complex) && b.type == List) {
+    return operate_binary_on_list_element_with_lvalue(a, b, mul);
+  } else if (a.type == List && (b.type == Real || b.type == Complex)) {
+    return operate_binary_on_list_element_with_rvalue(a, b, mul);
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, mul);
   } else {
@@ -104,6 +143,10 @@ static value divide(value a, value b) {
   } else if (a.type == Complex && b.type == Complex) {
     return (value){.type = Complex,
                    .complex_val = a.complex_val / b.complex_val};
+  } else if (a.type == List && (b.type == Real || b.type == Complex)) {
+    return operate_binary_on_list_element_with_rvalue(a, b, divide);
+  } else if ((a.type == Real || a.type == Complex) && b.type == List) {
+    return operate_binary_on_list_element_with_lvalue(a, b, divide);
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, divide);
   } else {
