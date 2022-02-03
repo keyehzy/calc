@@ -89,6 +89,17 @@ static value sum(value a, value b) {
   }
 }
 
+static value total(value a) {
+  CHECK(a.type == List);
+  value v = (value){.type = Real, .double_val = 0};
+  int N = Size(&a.list_val);
+  for (int i = 0; i < N; i++) {
+    value *r1 = GetVector(&a.list_val, i);
+    v = sum(v, *r1);
+  }
+  return v;
+}
+
 static value sub(value a, value b) {
   if (a.type == Real && b.type == Real) {
     return (value){.type = Real, .double_val = a.double_val - b.double_val};
@@ -149,6 +160,14 @@ static value divide(value a, value b) {
     return operate_binary_on_list_element_with_lvalue(a, b, divide);
   } else if (a.type == List && b.type == List) {
     return operate_binary_on_list_element(a, b, divide);
+  } else {
+    CHECK_NOT_REACHED();
+  }
+}
+
+static value dot(value a, value b) {
+  if (a.type == List && b.type == List) {
+    return total(operate_binary_on_list_element(a, b, mul));
   } else {
     CHECK_NOT_REACHED();
   }
@@ -226,6 +245,9 @@ void eval_binary_expr(AST *ast) {
       break;
     case op_binary_pow:
       ast->val = exponentiate(child_0(ast)->val, child_1(ast)->val);
+      break;
+    case op_binary_dot:
+      ast->val = dot(child_0(ast)->val, child_1(ast)->val);
       break;
     default:
       CHECK_NOT_REACHED();
@@ -402,6 +424,10 @@ static operation operation_from_tk(token t, int context) {
       case ',':
         op = (operation){
             .kind = op_comma, .prec = prec_comma, .assoc = assoc_right};
+        break;
+      case '.':
+        op = (operation){
+            .kind = op_binary_dot, .prec = prec_multdiv, .assoc = assoc_right};
         break;
 
       default:

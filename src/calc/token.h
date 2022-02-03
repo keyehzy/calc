@@ -75,7 +75,8 @@
   O('-')                       \
   O('*')                       \
   O('/')                       \
-  O('^')
+  O('^')                       \
+  O('.')
 
 #define ENUMERATE_FUNCTIONS(O) \
   O(sqrt)                      \

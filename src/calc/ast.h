@@ -38,6 +38,7 @@ typedef enum {
   op_binary_times,
   op_binary_div,
   op_binary_pow,
+  op_binary_dot,
   op_unary_plus,
   op_unary_minus,
   op_comma,
