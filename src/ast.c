@@ -24,25 +24,7 @@ static value map(value a, value (*func)(value)) {
   return (value){.type = List, .list_val = list};
 }
 
-static value map2(value a, value b, value (*func)(value, value)) {
-  CHECK(a.type == List && b.type == List);
-  int N = Size(&a.list_val);
-  CHECK(N == Size(&b.list_val));
-  vector list = NewVector();
-  for (int i = 0; i < N; i++) {
-    value *s1 = (value *)malloc(sizeof(value));
-    value *r1 = GetVector(&a.list_val, i);
-    value *r2 = GetVector(&b.list_val, i);
-    *s1 = func(*r1, *r2);
-    PushVector(&list, s1);
-  }
-  return (value){.type = List, .list_val = list};
-}
-
-static value operate_binary_on_list_element_with_lvalue(value a, value b,
-                                                        value (*func)(value,
-                                                                      value)) {
-  CHECK(is_number(a));
+static value map_by_left(value a, value b, value (*func)(value, value)) {
   CHECK(b.type == List);
   int N = Size(&b.list_val);
   vector list = NewVector();
@@ -55,9 +37,7 @@ static value operate_binary_on_list_element_with_lvalue(value a, value b,
   return (value){.type = List, .list_val = list};
 }
 
-static value operate_binary_on_list_element_with_rvalue(value a, value b,
-                                                        value (*func)(value,
-                                                                      value)) {
+static value map_by_right(value a, value b, value (*func)(value, value)) {
   CHECK(a.type == List);
   CHECK(is_number(b));
   int N = Size(&a.list_val);
@@ -71,14 +51,17 @@ static value operate_binary_on_list_element_with_rvalue(value a, value b,
   return (value){.type = List, .list_val = list};
 }
 
-static value operate_unary_on_list_element(value a, value (*func)(value)) {
+static value map2(value a, value b, value (*func)(value, value)) {
   CHECK(a.type == List);
+  CHECK(b.type == List);
   int N = Size(&a.list_val);
+  CHECK(N == Size(&b.list_val));
   vector list = NewVector();
   for (int i = 0; i < N; i++) {
     value *s1 = (value *)malloc(sizeof(value));
     value *r1 = GetVector(&a.list_val, i);
-    *s1 = func(*r1);
+    value *r2 = GetVector(&b.list_val, i);
+    *s1 = func(*r1, *r2);
     PushVector(&list, s1);
   }
   return (value){.type = List, .list_val = list};
@@ -98,6 +81,10 @@ static value sum(value a, value b) {
                    .complex_val = a.complex_val + b.complex_val};
   } else if (a.type == List && b.type == List) {
     return map2(a, b, sum);
+  } else if (is_number(a) && b.type == List) {
+    return map_by_left(a, b, sum);
+  } else if (a.type == List && is_number(b)) {
+    return map_by_right(a, b, sum);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -128,6 +115,10 @@ static value sub(value a, value b) {
                    .complex_val = a.complex_val - b.complex_val};
   } else if (a.type == List && b.type == List) {
     return map2(a, b, sub);
+  } else if (is_number(a) && b.type == List) {
+    return map_by_left(a, b, sub);
+  } else if (a.type == List && is_number(b)) {
+    return map_by_right(a, b, sub);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -145,12 +136,12 @@ static value mul(value a, value b) {
   } else if (a.type == Complex && b.type == Complex) {
     return (value){.type = Complex,
                    .complex_val = a.complex_val * b.complex_val};
-  } else if (is_number(a) && b.type == List) {
-    return operate_binary_on_list_element_with_lvalue(a, b, mul);
-  } else if (a.type == List && is_number(b)) {
-    return operate_binary_on_list_element_with_rvalue(a, b, mul);
   } else if (a.type == List && b.type == List) {
     return map2(a, b, mul);
+  } else if (is_number(a) && b.type == List) {
+    return map_by_left(a, b, mul);
+  } else if (a.type == List && is_number(b)) {
+    return map_by_right(a, b, mul);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -168,12 +159,12 @@ static value divide(value a, value b) {
   } else if (a.type == Complex && b.type == Complex) {
     return (value){.type = Complex,
                    .complex_val = a.complex_val / b.complex_val};
-  } else if (a.type == List && is_number(b)) {
-    return operate_binary_on_list_element_with_rvalue(a, b, divide);
-  } else if (is_number(a) && b.type == List) {
-    return operate_binary_on_list_element_with_lvalue(a, b, divide);
   } else if (a.type == List && b.type == List) {
     return map2(a, b, divide);
+  } else if (a.type == List && is_number(b)) {
+    return map_by_right(a, b, divide);
+  } else if (is_number(a) && b.type == List) {
+    return map_by_left(a, b, divide);
   } else {
     CHECK_NOT_REACHED();
   }
