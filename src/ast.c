@@ -2,17 +2,30 @@
 #include <calc/ast.h>
 #include <calc/token.h>
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 void evaluate_ast(AST *ast);
 
-static value operate_binary_on_list_element(value a, value b,
-                                            value (*func)(value, value)) {
 static bool is_number(value a) { return a.type == Real || a.type == Complex; }
+
+static value map(value a, value (*func)(value)) {
   CHECK(a.type == List);
-  CHECK(b.type == List);
+  vector list = NewVector();
+  int N = Size(&a.list_val);
+  for (int i = 0; i < N; i++) {
+    value *s = (value *)malloc(sizeof(value));
+    value *r = GetVector(&a.list_val, i);
+    *s = func(*r);
+    PushVector(&list, s);
+  }
+  return (value){.type = List, .list_val = list};
+}
+
+static value map2(value a, value b, value (*func)(value, value)) {
+  CHECK(a.type == List && b.type == List);
   int N = Size(&a.list_val);
   CHECK(N == Size(&b.list_val));
   vector list = NewVector();
@@ -84,7 +97,7 @@ static value sum(value a, value b) {
     return (value){.type = Complex,
                    .complex_val = a.complex_val + b.complex_val};
   } else if (a.type == List && b.type == List) {
-    return operate_binary_on_list_element(a, b, sum);
+    return map2(a, b, sum);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -114,7 +127,7 @@ static value sub(value a, value b) {
     return (value){.type = Complex,
                    .complex_val = a.complex_val - b.complex_val};
   } else if (a.type == List && b.type == List) {
-    return operate_binary_on_list_element(a, b, sub);
+    return map2(a, b, sub);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -137,7 +150,7 @@ static value mul(value a, value b) {
   } else if (a.type == List && is_number(b)) {
     return operate_binary_on_list_element_with_rvalue(a, b, mul);
   } else if (a.type == List && b.type == List) {
-    return operate_binary_on_list_element(a, b, mul);
+    return map2(a, b, mul);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -160,18 +173,15 @@ static value divide(value a, value b) {
   } else if (is_number(a) && b.type == List) {
     return operate_binary_on_list_element_with_lvalue(a, b, divide);
   } else if (a.type == List && b.type == List) {
-    return operate_binary_on_list_element(a, b, divide);
+    return map2(a, b, divide);
   } else {
     CHECK_NOT_REACHED();
   }
 }
 
 static value dot(value a, value b) {
-  if (a.type == List && b.type == List) {
-    return total(operate_binary_on_list_element(a, b, mul));
-  } else {
-    CHECK_NOT_REACHED();
-  }
+  CHECK(a.type == List && b.type == List);
+  return total(map2(a, b, mul));
 }
 
 static value negate(value a) {
@@ -180,7 +190,7 @@ static value negate(value a) {
   } else if (a.type == Complex) {
     return (value){.type = Complex, .complex_val = -a.complex_val};
   } else if (a.type == List) {
-    return operate_unary_on_list_element(a, negate);
+    return map(a, negate);
   } else {
     CHECK_NOT_REACHED();
   }
@@ -210,7 +220,7 @@ static value exponentiate(value a, value b) {
     } else if (a.type == Complex) {                                            \
       return (value){.type = Complex, .complex_val = c##funcs(a.complex_val)}; \
     } else if (a.type == List) {                                               \
-      return operate_unary_on_list_element(a, fn_##funcs);                     \
+      return map(a, fn_##funcs);                                               \
     } else {                                                                   \
       CHECK_NOT_REACHED();                                                     \
     }                                                                          \
